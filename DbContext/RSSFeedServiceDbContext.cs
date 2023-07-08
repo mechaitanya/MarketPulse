@@ -57,9 +57,9 @@ public class RSSFeedServiceDbContext : DbContext
 
             entity.Property(e => e.TemplateId).HasColumnName("TemplateId");
             entity.Property(e => e.TweetType).HasColumnName("TweetType");
-            entity.Property(e => e.MessageText).HasColumnName("MessageText");
-            entity.Property(e => e.TweetLink).HasColumnName("TweetLink");
-            entity.Property(e => e.SourceId).HasColumnName("SourceId");
+            entity.Property(e => e.MessageText).HasColumnName("MessageText").IsRequired(false);
+            entity.Property(e => e.TweetLink).HasColumnName("TweetLink").IsRequired(false);
+            entity.Property(e => e.SourceId).HasColumnName("SourceId").IsRequired(false);
             entity.Property(e => e.LanguageType).HasColumnName("LanguageType");
         });
 

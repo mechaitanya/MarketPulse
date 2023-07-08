@@ -26,9 +26,9 @@
     {
         public int TemplateId { get; set; }
         public string TweetType { get; set; }
-        public string MessageText { get; set; }
+        public string? MessageText { get; set; }
         public string TweetLink { get; set; }
-        public int? SourceId { get; set; }
+        public string? SourceId { get; set; }
         public string LanguageType { get; set; }
     }
 
@@ -41,5 +41,23 @@
 
         public Users User { get; set; }
         public TweetTemplates Template { get; set; }
+    }
+
+    public class TweetProperties : ITweetProperties
+    {
+        public int InstrumentId { get; set; }
+        public string TweetType { get; set; }
+        public string TemplateText { get; set; }
+        public string? SourceID { get; set; }
+        public string LanguageID { get; set; }
+    }
+
+    public interface ITweetProperties
+    {
+        int InstrumentId { get; set; }
+        string TweetType { get; set; }
+        string TemplateText { get; set; }
+        string SourceID { get; set; }
+        string LanguageID { get; set; }
     }
 }
