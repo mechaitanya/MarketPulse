@@ -18,6 +18,7 @@
         public TimeSpan TweetTime { get; set; }
         public string TweetFrequencyType { get; set; }
         public int TweetFrequencyValue { get; set; }
+        public int TemplateId { get; set; }
 
         public Users User { get; set; }
     }
@@ -38,6 +39,7 @@
         public int InstrumentId { get; set; }
         public string TweetType { get; set; }
         public int TemplateId { get; set; }
+        public int ScheduleId { get; set; }
 
         public Users User { get; set; }
         public TweetTemplates Template { get; set; }

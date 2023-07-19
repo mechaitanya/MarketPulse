@@ -4,15 +4,15 @@ using static MarketPulse.Infrastructure.AccessInstrumentData;
 
 namespace MarketPulse.Models
 {
-    internal class TweetBuilder
+    public class TweetBuilder
     {
         private readonly ITweetProperties _properties;
-        private readonly ILogger _logger;
+        private readonly IMyLogger _logger;
         private readonly PressReleasesRepository _pressReleasesRepository;
         private readonly InstrumentDataRepository _instrumentDataRepository;
         private readonly IConfiguration _configuration;
 
-        public TweetBuilder(ITweetProperties tweetProperties, ILogger logger, IConfiguration configuration)
+        public TweetBuilder(ITweetProperties tweetProperties, IMyLogger logger, IConfiguration configuration)
         {
             _properties = tweetProperties;
             _logger = logger;
@@ -34,11 +34,11 @@ namespace MarketPulse.Models
             }
         }
 
-        public InstrumentData GetMOATweetMessage()
+        public async Task<InstrumentData> GetMOATweetMessage()
         {
             if (_properties.TweetType.ToLower() == "moa")
             {
-                InstrumentData iData = _instrumentDataRepository.GetInstrumentData(_properties.InstrumentId);
+                InstrumentData iData = await _instrumentDataRepository.GetInstrumentData(_properties.InstrumentId);
                 return iData;
             }
             else
@@ -47,11 +47,11 @@ namespace MarketPulse.Models
             }
         }
 
-        public InstrumentData GetEODTweetMessage()
+        public async Task<InstrumentData> GetEODTweetMessage()
         {
             if (_properties.TweetType.ToLower() == "eod")
             {
-                InstrumentData iData = _instrumentDataRepository.GetInstrumentData(_properties.InstrumentId);
+                InstrumentData iData = await _instrumentDataRepository.GetInstrumentData(_properties.InstrumentId);
                 return iData;
             }
             else
@@ -60,11 +60,11 @@ namespace MarketPulse.Models
             }
         }
 
-        public WeekData GetEOWTweetMessage()
+        public async Task<WeekData> GetEOWTweetMessage()
         {
             if (_properties.TweetType.ToLower() == "eow")
             {
-                WeekData iData = _instrumentDataRepository.GetWeedEndInstrumentData(_properties.InstrumentId);
+                WeekData iData = await _instrumentDataRepository.GetWeedEndInstrumentData(_properties.InstrumentId);
                 return iData;
             }
             else
@@ -73,11 +73,11 @@ namespace MarketPulse.Models
             }
         }
 
-        public List<Earning> GetEATweetMessage()
+        public async Task<List<Earning>> GetEATweetMessage()
         {
             if (_properties.TweetType.ToLower() == "ea")
             {
-                List<Earning> iData = _instrumentDataRepository.GetEAInstrumentData(_properties.InstrumentId);
+                List<Earning> iData = await _instrumentDataRepository.GetEAInstrumentData(_properties.InstrumentId);
                 return iData;
             }
             else

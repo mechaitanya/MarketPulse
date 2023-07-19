@@ -6,7 +6,7 @@ namespace MarketPulse.Infrastructure
     public class AccessInstrumentData
     {
         private readonly string _connectionString;
-        private readonly ILogger _logger;
+        private readonly IMyLogger _logger;
 
         public class InstrumentData
         {
@@ -63,13 +63,13 @@ namespace MarketPulse.Infrastructure
             public bool BusinessDaysStoT { get; set; }
         }
 
-        public AccessInstrumentData(IConfiguration configuration, ILogger logger)
+        public AccessInstrumentData(IConfiguration configuration, IMyLogger logger)
         {
             _connectionString = configuration.GetConnectionString("SharkSiteConnectionString");
             _logger = logger;
         }
 
-        public InstrumentData GetPrice(int instrumentID)
+        public async Task<InstrumentData> GetPrice(int instrumentID)
         {
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
@@ -80,7 +80,7 @@ namespace MarketPulse.Infrastructure
 
                     try
                     {
-                        sqlConnection.Open();
+                        await sqlConnection.OpenAsync();
                         using (var reader = sqlCommand.ExecuteReader())
                         {
                             if (reader.Read())
@@ -88,56 +88,56 @@ namespace MarketPulse.Infrastructure
                                 return new InstrumentData
                                 {
                                     InstrumentId = (int)reader["InstrumentId"],
-                                    Bid = reader.GetFieldValue<decimal>("Bid"),
-                                    Ask = reader.GetFieldValue<decimal>("Ask"),
-                                    Open = reader.GetFieldValue<decimal>("Open"),
-                                    Last = reader.GetFieldValue<decimal>("Last"),
-                                    High = reader.GetFieldValue<decimal>("High"),
-                                    Low = reader.GetFieldValue<decimal>("Low"),
-                                    Volume = reader.GetFieldValue<long>("Volume"),
-                                    Mid = reader.GetFieldValue<decimal>("Mid"),
-                                    Date = reader.GetFieldValue<DateTime>("Date"),
-                                    PrevClose = reader.GetFieldValue<decimal>("PrevClose"),
-                                    Change = reader.GetFieldValue<decimal>("Change"),
-                                    OpenChange = reader.GetFieldValue<decimal>("OpenChange"),
-                                    LastRowChange = reader.GetFieldValue<DateTime>("LastRowChange"),
-                                    ChangePercentage = reader.GetFieldValue<decimal>("ChangePercentage"),
-                                    OpenChangePercentage = reader.GetFieldValue<decimal>("OpenChangePercentage"),
-                                    CurrencyCode = reader.GetFieldValue<string>("CurrencyCode"),
-                                    Name = reader.GetFieldValue<string>("Name"),
-                                    YTD = reader.GetFieldValue<decimal>("YTD"),
-                                    Week = reader.GetFieldValue<decimal>("Week"),
-                                    _2Week = reader.GetFieldValue<decimal>("2Week"),
-                                    Month = reader.GetFieldValue<decimal>("Month"),
-                                    NoShares = reader.GetFieldValue<decimal>("NoShares"),
-                                    MarketCap = reader.GetFieldValue<decimal>("MarketCap"),
-                                    _52wHigh = reader.GetFieldValue<decimal>("52wHigh"),
-                                    _52wLow = reader.GetFieldValue<decimal>("52wLow"),
-                                    _52wChange = reader.GetFieldValue<decimal>("52wChange"),
-                                    _3MonthHigh = reader.GetFieldValue<decimal>("3MonthHigh"),
-                                    _3MonthLow = reader.GetFieldValue<decimal>("3MonthLow"),
-                                    _3MonthChange = reader.GetFieldValue<decimal>("3MonthChange"),
-                                    _5YearsChange = reader.GetFieldValue<decimal>("5YearsChange"),
-                                    EPS = reader.GetFieldValue<decimal>("EPS"),
-                                    SPS = reader.GetFieldValue<double>("SPS"),
-                                    DPS = reader.GetFieldValue<decimal>("DPS"),
-                                    PayoutRatio = reader.GetFieldValue<double>("PayoutRatio"),
-                                    Turnover = reader.GetFieldValue<decimal>("Turnover"),
-                                    NetIncome = reader.GetFieldValue<decimal>("NetIncome"),
-                                    TurnoverGrowth = reader.GetFieldValue<double>("TurnoverGrowth"),
-                                    NetIncomeGrowth = reader.GetFieldValue<double>("NetIncomeGrowth"),
-                                    BookValueOfShare = reader.GetFieldValue<double>("BookValueOfShare"),
-                                    AllTimeHigh = reader.GetFieldValue<decimal>("AllTimeHigh"),
-                                    AllTimeLow = reader.GetFieldValue<decimal>("AllTimeLow"),
-                                    TotalMarketCap = reader.GetFieldValue<decimal>("TotalMarketCap"),
-                                    PrevMid = reader.GetFieldValue<decimal>("PrevMid"),
-                                    _52Highest = reader.GetFieldValue<decimal>("52Highest"),
-                                    _52Lowest = reader.GetFieldValue<decimal>("52Lowest"),
-                                    HighYTD = reader.GetFieldValue<decimal>("HighYTD"),
-                                    LowYTD = reader.GetFieldValue<decimal>("LowYTD"),
-                                    Ticker = reader.GetFieldValue<string>("Ticker"),
-                                    MarketName = reader.GetFieldValue<string>("MarketName"),
-                                    BusinessDaysStoT = reader.GetFieldValue<bool>("BusinessDaysStoT")
+                                    Bid = reader.IsDBNull("Bid") ? default : reader.GetFieldValue<decimal>("Bid"),
+                                    Ask = reader.IsDBNull("Ask") ? default : reader.GetFieldValue<decimal>("Ask"),
+                                    Open = reader.IsDBNull("Open") ? default : reader.GetFieldValue<decimal>("Open"),
+                                    Last = reader.IsDBNull("Last") ? default : reader.GetFieldValue<decimal>("Last"),
+                                    High = reader.IsDBNull("High") ? default : reader.GetFieldValue<decimal>("High"),
+                                    Low = reader.IsDBNull("Low") ? default : reader.GetFieldValue<decimal>("Low"),
+                                    Volume = reader.IsDBNull("Volume") ? default : reader.GetFieldValue<long>("Volume"),
+                                    Mid = reader.IsDBNull("Mid") ? default : reader.GetFieldValue<decimal>("Mid"),
+                                    Date = reader.IsDBNull("Date") ? default : reader.GetFieldValue<DateTime>("Date"),
+                                    PrevClose = reader.IsDBNull("PrevClose") ? default : reader.GetFieldValue<decimal>("PrevClose"),
+                                    Change = reader.IsDBNull("Change") ? default : reader.GetFieldValue<decimal>("Change"),
+                                    OpenChange = reader.IsDBNull("OpenChange") ? default : reader.GetFieldValue<decimal>("OpenChange"),
+                                    LastRowChange = reader.IsDBNull("LastRowChange") ? default : reader.GetFieldValue<DateTime>("LastRowChange"),
+                                    ChangePercentage = reader.IsDBNull("ChangePercentage") ? default : reader.GetFieldValue<decimal>("ChangePercentage"),
+                                    OpenChangePercentage = reader.IsDBNull("OpenChangePercentage") ? default : reader.GetFieldValue<decimal>("OpenChangePercentage"),
+                                    CurrencyCode = reader.IsDBNull("CurrencyCode") ? null : reader.GetFieldValue<string>("CurrencyCode"),
+                                    Name = reader.IsDBNull("Name") ? null : reader.GetFieldValue<string>("Name"),
+                                    YTD = reader.IsDBNull("YTD") ? default : reader.GetFieldValue<decimal>("YTD"),
+                                    Week = reader.IsDBNull("Week") ? default : reader.GetFieldValue<decimal>("Week"),
+                                    _2Week = reader.IsDBNull("2Week") ? default : reader.GetFieldValue<decimal>("2Week"),
+                                    Month = reader.IsDBNull("Month") ? default : reader.GetFieldValue<decimal>("Month"),
+                                    NoShares = reader.IsDBNull("NoShares") ? default : reader.GetFieldValue<decimal>("NoShares"),
+                                    MarketCap = reader.IsDBNull("MarketCap") ? default : reader.GetFieldValue<decimal>("MarketCap"),
+                                    _52wHigh = reader.IsDBNull("52wHigh") ? default : reader.GetFieldValue<decimal>("52wHigh"),
+                                    _52wLow = reader.IsDBNull("52wLow") ? default : reader.GetFieldValue<decimal>("52wLow"),
+                                    _52wChange = reader.IsDBNull("52wChange") ? default : reader.GetFieldValue<decimal>("52wChange"),
+                                    _3MonthHigh = reader.IsDBNull("3MonthHigh") ? default : reader.GetFieldValue<decimal>("3MonthHigh"),
+                                    _3MonthLow = reader.IsDBNull("3MonthLow") ? default : reader.GetFieldValue<decimal>("3MonthLow"),
+                                    _3MonthChange = reader.IsDBNull("3MonthChange") ? default : reader.GetFieldValue<decimal>("3MonthChange"),
+                                    _5YearsChange = reader.IsDBNull("5YearsChange") ? default : reader.GetFieldValue<decimal>("5YearsChange"),
+                                    EPS = reader.IsDBNull("EPS") ? default : reader.GetFieldValue<decimal>("EPS"),
+                                    SPS = reader.IsDBNull("SPS") ? default : reader.GetFieldValue<double>("SPS"),
+                                    DPS = reader.IsDBNull("DPS") ? default : reader.GetFieldValue<decimal>("DPS"),
+                                    PayoutRatio = reader.IsDBNull("PayoutRatio") ? default : reader.GetFieldValue<double>("PayoutRatio"),
+                                    Turnover = reader.IsDBNull("Turnover") ? default : reader.GetFieldValue<decimal>("Turnover"),
+                                    NetIncome = reader.IsDBNull("NetIncome") ? default : reader.GetFieldValue<decimal>("NetIncome"),
+                                    TurnoverGrowth = reader.IsDBNull("TurnoverGrowth") ? default : reader.GetFieldValue<double>("TurnoverGrowth"),
+                                    NetIncomeGrowth = reader.IsDBNull("NetIncomeGrowth") ? default : reader.GetFieldValue<double>("NetIncomeGrowth"),
+                                    BookValueOfShare = reader.IsDBNull("BookValueOfShare") ? default : reader.GetFieldValue<double>("BookValueOfShare"),
+                                    AllTimeHigh = reader.IsDBNull("AllTimeHigh") ? default : reader.GetFieldValue<decimal>("AllTimeHigh"),
+                                    AllTimeLow = reader.IsDBNull("AllTimeLow") ? default : reader.GetFieldValue<decimal>("AllTimeLow"),
+                                    TotalMarketCap = reader.IsDBNull("TotalMarketCap") ? default : reader.GetFieldValue<decimal>("TotalMarketCap"),
+                                    PrevMid = reader.IsDBNull("PrevMid") ? default : reader.GetFieldValue<decimal>("PrevMid"),
+                                    _52Highest = reader.IsDBNull("52Highest") ? default : reader.GetFieldValue<decimal>("52Highest"),
+                                    _52Lowest = reader.IsDBNull("52Lowest") ? default : reader.GetFieldValue<decimal>("52Lowest"),
+                                    HighYTD = reader.IsDBNull("HighYTD") ? default : reader.GetFieldValue<decimal>("HighYTD"),
+                                    LowYTD = reader.IsDBNull("LowYTD") ? default : reader.GetFieldValue<decimal>("LowYTD"),
+                                    Ticker = reader.IsDBNull("Ticker") ? null : reader.GetFieldValue<string>("Ticker"),
+                                    MarketName = reader.IsDBNull("MarketName") ? null : reader.GetFieldValue<string>("MarketName"),
+                                    BusinessDaysStoT = !reader.IsDBNull("BusinessDaysStoT") && reader.GetFieldValue<bool>("BusinessDaysStoT")
                                 };
                             }
                         }

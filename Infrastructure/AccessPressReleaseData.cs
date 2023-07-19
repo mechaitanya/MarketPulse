@@ -3,7 +3,7 @@ using System.Data;
 
 namespace MarketPulse.Infrastructure
 {
-    internal class PressRelease
+    public class PressRelease
     {
         public long PR_ID { get; set; }
         public string PR_Title { get; set; }
@@ -15,12 +15,12 @@ namespace MarketPulse.Infrastructure
         public string PR_Link { get; set; }
     }
 
-    internal class AccessPressReleaseData
+    public class AccessPressReleaseData
     {
         private readonly string _connectionString;
-        private readonly ILogger _logger;
+        private readonly IMyLogger _logger;
 
-        public AccessPressReleaseData(IConfiguration configuration, ILogger logger)
+        public AccessPressReleaseData(IConfiguration configuration, IMyLogger logger)
         {
             _connectionString = configuration.GetConnectionString("SharkSiteConnectionString");
             _logger = logger;

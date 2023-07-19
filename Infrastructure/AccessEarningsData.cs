@@ -13,15 +13,15 @@ namespace MarketPulse.Infrastructure
     public class AccessEarningsData
     {
         private readonly string _connectionString;
-        private readonly ILogger _logger;
+        private readonly IMyLogger _logger;
 
-        public AccessEarningsData(IConfiguration configuration, ILogger logger)
+        public AccessEarningsData(IConfiguration configuration, IMyLogger logger)
         {
             _connectionString = configuration.GetConnectionString("SharkSiteConnectionString");
             _logger = logger;
         }
 
-        public List<Earning> GetEarningList(string stringOfInstrumentIds)
+        public async Task<List<Earning>> GetEarningList(string stringOfInstrumentIds)
         {
             List<Earning> earnings = new();
 
@@ -34,7 +34,7 @@ namespace MarketPulse.Infrastructure
 
                     try
                     {
-                        sqlConnection.Open();
+                        await sqlConnection.OpenAsync();
                         using (SqlDataReader reader = sqlCommand.ExecuteReader())
                         {
                             while (reader.Read())

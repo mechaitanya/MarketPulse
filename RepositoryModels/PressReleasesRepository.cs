@@ -6,10 +6,10 @@ namespace MarketPulse.RepositoryModels
     internal class PressReleasesRepository
     {
         private readonly IConfiguration _configuration;
-        private readonly ILogger _logger;
+        private readonly IMyLogger _logger;
         private readonly ITweetProperties _properties;
 
-        public PressReleasesRepository(IConfiguration configuration, ILogger logger, ITweetProperties tweetProperties)
+        public PressReleasesRepository(IConfiguration configuration, IMyLogger logger, ITweetProperties tweetProperties)
         {
             _configuration = configuration;
             _logger = logger;

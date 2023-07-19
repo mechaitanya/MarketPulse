@@ -16,15 +16,15 @@ namespace MarketPulse.Infrastructure
     public class AccessPublicHolidayData
     {
         private readonly string _connectionString;
-        private readonly ILogger _logger;
+        private readonly IMyLogger _logger;
 
-        public AccessPublicHolidayData(IConfiguration configuration, ILogger logger)
+        public AccessPublicHolidayData(IConfiguration configuration, IMyLogger logger)
         {
             _connectionString = configuration.GetConnectionString("SharkSiteConnectionString");
             _logger = logger;
         }
 
-        public List<PublicHoliday> SelectAllPublicHolidays(string stringOfInstrumentIds)
+        public async Task<List<PublicHoliday>> SelectAllPublicHolidaysAsync(string stringOfInstrumentIds)
         {
             List<PublicHoliday> publicHolidays = new();
 
@@ -37,22 +37,26 @@ namespace MarketPulse.Infrastructure
 
                     try
                     {
-                        sqlConnection.Open();
-                        using (SqlDataReader reader = sqlCommand.ExecuteReader())
+                        await sqlConnection.OpenAsync();
+
+                        using (SqlDataReader reader = await sqlCommand.ExecuteReaderAsync())
                         {
-                            while (reader.Read())
+                            while (await reader.ReadAsync())
                             {
-                                PublicHoliday publicHoliday = new PublicHoliday();
-                                publicHoliday.InstrumentId = reader.GetFieldValue<int>("Id");
-                                publicHoliday.Fc_ID = reader.GetFieldValue<int>("fc_ID");
-                                publicHoliday.Fc_cCode = reader.IsDBNull(reader.GetOrdinal("fc_cCode")) ? null : reader.GetFieldValue<string>("fc_cCode");
-                                publicHoliday.Fc_Datetime = reader.GetFieldValue<DateTime>("fc_DateTime");
-                                publicHoliday.Fc_Event = reader.GetFieldValue<Int16>("fc_Event");
-                                publicHoliday.Fc_Market = reader.GetFieldValue<Int16>("fc_Market");
+                                PublicHoliday publicHoliday = new()
+                                {
+                                    InstrumentId = reader.GetFieldValue<int>("Id"),
+                                    Fc_ID = reader.GetFieldValue<int>("fc_ID"),
+                                    Fc_cCode = reader.IsDBNull(reader.GetOrdinal("fc_cCode")) ? null : reader.GetFieldValue<string>("fc_cCode"),
+                                    Fc_Datetime = reader.GetFieldValue<DateTime>("fc_DateTime"),
+                                    Fc_Event = reader.GetFieldValue<Int16>("fc_Event"),
+                                    Fc_Market = reader.GetFieldValue<Int16>("fc_Market")
+                                };
 
                                 publicHolidays.Add(publicHoliday);
                             }
-                            reader.Close();
+
+                            await reader.CloseAsync();
                         }
                     }
                     catch (Exception ex)
@@ -61,7 +65,6 @@ namespace MarketPulse.Infrastructure
                     }
                 }
             }
-
             return publicHolidays;
         }
 

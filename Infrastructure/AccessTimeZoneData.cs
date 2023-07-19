@@ -6,9 +6,9 @@ namespace MarketPulse.Infrastructure
     public class AccessTimeZoneData
     {
         private readonly string _connectionString;
-        private readonly ILogger _logger;
+        private readonly IMyLogger _logger;
 
-        public AccessTimeZoneData(IConfiguration configuration, ILogger logger)
+        public AccessTimeZoneData(IConfiguration configuration, IMyLogger logger)
         {
             _connectionString = configuration.GetConnectionString("SharkSiteConnectionString");
             _logger = logger;

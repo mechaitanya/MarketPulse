@@ -18,17 +18,17 @@ namespace MarketPulse.Infrastructure
     public class AccessWeekInstrumentData
     {
         private readonly string _connectionString;
-        private readonly ILogger _logger;
+        private readonly IMyLogger _logger;
 
-        public AccessWeekInstrumentData(IConfiguration configuration, ILogger logger)
+        public AccessWeekInstrumentData(IConfiguration configuration, IMyLogger logger)
         {
             _connectionString = configuration.GetConnectionString("SharkSiteConnectionString");
             _logger = logger;
         }
 
-        public WeekData GetWeekData(int instrumentID)
+        public async Task<WeekData> GetWeekData(int instrumentID)
         {
-            WeekData weekData = new WeekData();
+            WeekData weekData = new();
 
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
@@ -39,7 +39,7 @@ namespace MarketPulse.Infrastructure
 
                     try
                     {
-                        sqlConnection.Open();
+                        await sqlConnection.OpenAsync();
                         using (var reader = sqlCommand.ExecuteReader())
                         {
                             if (reader.Read())

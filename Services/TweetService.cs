@@ -3,8 +3,8 @@ using MarketPulse.Infrastructure;
 using MarketPulse.Models;
 using MarketPulse.Utility;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text.RegularExpressions;
-using static MarketPulse.Infrastructure.AccessInstrumentData;
 
 namespace MarketPulse.Services
 {
@@ -13,17 +13,18 @@ namespace MarketPulse.Services
         private Timer _timer;
         private readonly IServiceProvider _serviceProvider;
         private readonly IRSSFeedServiceDbContextFactory _dbContextFactory;
-        private readonly ITweetProperties _tweetProperties;
-        private readonly ILogger<TweetService> _logger;
+        private readonly IMyLogger _logger;
         private readonly IConfiguration _configuration;
+        private readonly IMemoryCache _memoryCache;
 
-        public TweetService(IServiceProvider serviceProvider, IRSSFeedServiceDbContextFactory dbContextFactory, ITweetProperties tweetProperties, ILogger<TweetService> logger, IConfiguration configuration)
+        public TweetService(IServiceProvider serviceProvider, IRSSFeedServiceDbContextFactory dbContextFactory,
+            IMyLogger logger, IConfiguration configuration, IMemoryCache memoryCache)
         {
             _serviceProvider = serviceProvider;
             _dbContextFactory = dbContextFactory;
-            _tweetProperties = tweetProperties;
             _logger = logger;
             _configuration = configuration;
+            _memoryCache = memoryCache;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -59,9 +60,9 @@ namespace MarketPulse.Services
                         IsTweetTimeMatchingFrequency(t.TweetTime, t.TweetFrequencyType, t.TweetFrequencyValue))
                     .Join(
                         dbContext.InstrumentTweets,
-                        schedule => schedule.InstrumentId,
-                        tweet => tweet.InstrumentId,
-                        (schedule, tweet) => new { schedule.InstrumentId, tweet.TweetType, schedule.TweetTime });
+                        schedule => new { schedule.InstrumentId, schedule.TemplateId },
+                        tweet => new { tweet.InstrumentId, tweet.TemplateId },
+                        (schedule, tweet) => new { schedule.InstrumentId, tweet.TweetType, schedule.TweetTime, tweet.ScheduleId, schedule.TemplateId });
 
                 var tweetExecutionTasks = new List<Task>();
 
@@ -163,24 +164,23 @@ namespace MarketPulse.Services
 
         private async Task ProcessPRATweets(int instrumentId, TweetTemplates tweetTemplate, string tweetType, DateTime dTime)
         {
-            _tweetProperties.InstrumentId = instrumentId;
-            _tweetProperties.TweetType = tweetType;
-            _tweetProperties.TemplateText = tweetTemplate.MessageText;
-            _tweetProperties.SourceID = tweetTemplate.SourceId;
-            _tweetProperties.LanguageID = tweetTemplate.LanguageType;
-            
-            AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
-            var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
+            TweetProperties _tweetProperties = new()
+            {
+                InstrumentId = instrumentId,
+                TweetType = tweetType,
+                TemplateText = tweetTemplate.MessageText,
+                SourceID = tweetTemplate.SourceId,
+                LanguageID = tweetTemplate.LanguageType
+            };
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
             var totaltweets = tweetBuilder.GetPRATweetMessage();
-            
 
             if (totaltweets?.Count > 0)
             {
                 foreach (var PRtweet in totaltweets)
                 {
-                    if (!IsPublicHoliday(PRtweet.PR_Instrument_ID, date))
+                    if (!IsPublicHoliday(PRtweet.PR_Instrument_ID, dTime))
                     {
                         Console.WriteLine($"pra template for instrument ID {instrumentId}: {PRtweet.PR_Link} at {DateTime.Now}");
                     }
@@ -191,23 +191,25 @@ namespace MarketPulse.Services
 
         private async Task ProcessMOATweets(int instrumentId, TweetTemplates tweetTemplate, string tweetType, DateTime dTime)
         {
-            _tweetProperties.InstrumentId = instrumentId;
-            _tweetProperties.TweetType = tweetType;
-            _tweetProperties.TemplateText = tweetTemplate.MessageText;
-            _tweetProperties.SourceID = tweetTemplate.SourceId;
-            _tweetProperties.LanguageID = tweetTemplate.LanguageType;
+            TweetProperties _tweetProperties = new()
+            {
+                InstrumentId = instrumentId,
+                TweetType = tweetType,
+                TemplateText = tweetTemplate.MessageText,
+                SourceID = tweetTemplate.SourceId,
+                LanguageID = tweetTemplate.LanguageType
+            };
 
             AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
-            var instrumentData = tweetBuilder.GetMOATweetMessage();
-          
+            var instrumentData = await tweetBuilder.GetMOATweetMessage();
 
             if (!IsPublicHoliday(instrumentId, date))
             {
                 var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
-                Console.WriteLine($"{text} at {DateTime.Now}");
+                Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
             }
 
             await Task.Delay(5);
@@ -215,21 +217,23 @@ namespace MarketPulse.Services
 
         private async Task ProcessEODTweets(int instrumentId, TweetTemplates tweetTemplate, string tweetType, DateTime dTime)
         {
-            _tweetProperties.InstrumentId = instrumentId;
-            _tweetProperties.TweetType = tweetType;
-            _tweetProperties.TemplateText = tweetTemplate.MessageText;
-            _tweetProperties.SourceID = tweetTemplate.SourceId;
-            _tweetProperties.LanguageID = tweetTemplate.LanguageType;
+            TweetProperties _tweetProperties = new()
+            {
+                InstrumentId = instrumentId,
+                TweetType = tweetType,
+                TemplateText = tweetTemplate.MessageText,
+                SourceID = tweetTemplate.SourceId,
+                LanguageID = tweetTemplate.LanguageType
+            };
 
             AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
-            var instrumentData = tweetBuilder.GetEODTweetMessage();
-     
+            var instrumentData = await tweetBuilder.GetEODTweetMessage();
+
             if (!IsPublicHoliday(instrumentId, date))
             {
-                //var text = MakeInstrumentTweet(instrumentData, tweetTemplate.MessageText);
                 var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
                 Console.WriteLine($"{text} at {DateTime.Now}");
             }
@@ -238,17 +242,20 @@ namespace MarketPulse.Services
 
         private async Task ProcessEOWTweets(int instrumentId, TweetTemplates tweetTemplate, string tweetType, DateTime dTime)
         {
-            _tweetProperties.InstrumentId = instrumentId;
-            _tweetProperties.TweetType = tweetType;
-            _tweetProperties.TemplateText = tweetTemplate.MessageText;
-            _tweetProperties.SourceID = tweetTemplate.SourceId;
-            _tweetProperties.LanguageID = tweetTemplate.LanguageType;
+            TweetProperties _tweetProperties = new()
+            {
+                InstrumentId = instrumentId,
+                TweetType = tweetType,
+                TemplateText = tweetTemplate.MessageText,
+                SourceID = tweetTemplate.SourceId,
+                LanguageID = tweetTemplate.LanguageType
+            };
 
             AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
-            var weekData = tweetBuilder.GetEOWTweetMessage();
+            var weekData = await tweetBuilder.GetEOWTweetMessage();
 
             if (!IsPublicHoliday(instrumentId, date))
             {
@@ -260,17 +267,20 @@ namespace MarketPulse.Services
 
         private async Task ProcessEATweets(int instrumentId, TweetTemplates tweetTemplate, string tweetType, DateTime dTime)
         {
-            _tweetProperties.InstrumentId = instrumentId;
-            _tweetProperties.TweetType = tweetType;
-            _tweetProperties.TemplateText = tweetTemplate.MessageText;
-            _tweetProperties.SourceID = tweetTemplate.SourceId;
-            _tweetProperties.LanguageID = tweetTemplate.LanguageType;
+            TweetProperties _tweetProperties = new()
+            {
+                InstrumentId = instrumentId,
+                TweetType = tweetType,
+                TemplateText = tweetTemplate.MessageText,
+                SourceID = tweetTemplate.SourceId,
+                LanguageID = tweetTemplate.LanguageType
+            };
 
             AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
-            var earningData = tweetBuilder.GetEATweetMessage();
+            var earningData = await tweetBuilder.GetEATweetMessage();
 
             foreach (var earning in earningData)
             {
@@ -325,134 +335,27 @@ namespace MarketPulse.Services
             return messageText;
         }
 
-        //public static string MakeInstrumentTweet(InstrumentData instrumentData, string MessageText)
-        //{
-        //    string pattern = @"\{([^{}]+)\}:\{([^{}]+)\}";
-        //    MatchCollection matches = Regex.Matches(MessageText, pattern);
-
-        //    Dictionary<string, string> keyValuePairs = new();
-
-        //    foreach (Match match in matches)
-        //    {
-        //        string placeholder = match.Groups[0].Value;
-        //        string key = match.Groups[1].Value;
-        //        string formatSpecifier = match.Groups[2].Value;
-
-        //        keyValuePairs.Add(key, formatSpecifier);
-        //    }
-
-        //    if (instrumentData != null)
-        //    {
-        //        var instrumentProperties = typeof(InstrumentData).GetProperties();
-
-        //        foreach (var property in instrumentProperties)
-        //        {
-        //            string propertyName = property.Name.ToLower();
-        //            string placeholder = $"{{{propertyName.ToLower()}}}";
-        //            string propertyValue = property.GetValue(instrumentData)?.ToString();
-
-        //            if (MessageText.Contains(placeholder))
-        //            {
-        //                if (keyValuePairs.TryGetValue(propertyName.ToLower(), out string formatSpecifier))
-        //                {
-        //                    propertyValue = DataFormatter.ApplyFormatSpecifier(propertyValue, formatSpecifier);
-        //                }
-
-        //                MessageText = MessageText.Replace(placeholder, propertyValue).Replace(":{" + keyValuePairs[propertyName] + "}", " ").Trim();
-        //                MessageText = Regex.Replace(MessageText, @"\s+", " ");
-        //            }
-        //        }
-        //    }
-        //    return MessageText;
-        //}
-
-        //public static string MakeWeekEndInstrumentTweet(WeekData weekData, string MessageText)
-        //{
-        //    string pattern = @"\{([^{}]+)\}:\{([^{}]+)\}";
-        //    MatchCollection matches = Regex.Matches(MessageText, pattern);
-
-        //    Dictionary<string, string> keyValuePairs = new();
-
-        //    foreach (Match match in matches)
-        //    {
-        //        string placeholder = match.Groups[0].Value;
-        //        string key = match.Groups[1].Value;
-        //        string formatSpecifier = match.Groups[2].Value;
-
-        //        keyValuePairs.Add(key, formatSpecifier);
-        //    }
-
-        //    if (weekData != null)
-        //    {
-        //        var instrumentProperties = typeof(WeekData).GetProperties();
-
-        //        foreach (var property in instrumentProperties)
-        //        {
-        //            string propertyName = property.Name.ToLower();
-        //            string placeholder = $"{{{propertyName.ToLower()}}}";
-        //            string propertyValue = property.GetValue(weekData)?.ToString();
-
-        //            if (MessageText.Contains(placeholder))
-        //            {
-        //                if (keyValuePairs.TryGetValue(propertyName.ToLower(), out var formatSpecifier))
-        //                {
-        //                    propertyValue = DataFormatter.ApplyFormatSpecifier(propertyValue, formatSpecifier);
-        //                }
-
-        //                MessageText = MessageText.Replace(placeholder, propertyValue).Replace(":{" + keyValuePairs[propertyName] + "}", " ").Trim();
-        //                MessageText = Regex.Replace(MessageText, @"\s+", " ");
-        //            }
-        //        }
-        //    }
-        //    return MessageText;
-        //}
-
-        //public static string MakeEATweet(List<Earning> earning, string MessageText)
-        //{
-        //    string pattern = @"\{([^{}]+)\}:\{([^{}]+)\}";
-        //    MatchCollection matches = Regex.Matches(MessageText, pattern);
-
-        //    Dictionary<string, string> keyValuePairs = new();
-
-        //    foreach (Match match in matches)
-        //    {
-        //        string placeholder = match.Groups[0].Value;
-        //        string key = match.Groups[1].Value;
-        //        string formatSpecifier = match.Groups[2].Value;
-
-        //        keyValuePairs.Add(key, formatSpecifier);
-        //    }
-
-        //    if (earning != null)
-        //    {
-        //        var instrumentProperties = typeof(WeekData).GetProperties();
-
-        //        foreach (var property in instrumentProperties)
-        //        {
-        //            string propertyName = property.Name.ToLower();
-        //            string placeholder = $"{{{propertyName.ToLower()}}}";
-        //            string propertyValue = property.GetValue(earning)?.ToString();
-
-        //            if (MessageText.Contains(placeholder))
-        //            {
-        //                if (keyValuePairs.TryGetValue(propertyName.ToLower(), out var formatSpecifier))
-        //                {
-        //                    propertyValue = DataFormatter.ApplyFormatSpecifier(propertyValue, formatSpecifier);
-        //                }
-
-        //                MessageText = MessageText.Replace(placeholder, propertyValue).Replace(":{" + keyValuePairs[propertyName] + "}", " ").Trim();
-        //                MessageText = Regex.Replace(MessageText, @"\s+", " ");
-        //            }
-        //        }
-        //    }
-        //    return MessageText;
-        //}
-
         public bool IsPublicHoliday(long instrumentId, DateTime dateTime)
         {
             AccessPublicHolidayData accessPublicHolidayData = new(_configuration, _logger);
-            var listHolidays = accessPublicHolidayData.SelectAllPublicHolidays(instrumentId.ToString());
-            return accessPublicHolidayData.CheckPublicHoliday(instrumentId, dateTime, listHolidays);
+            if (_memoryCache.TryGetValue("HolidaysCacheKey", out List<PublicHoliday> holidays))
+            {
+                return accessPublicHolidayData.CheckPublicHoliday(instrumentId, dateTime, holidays);
+            }
+            else
+            {
+                CacheUpdatingService cus = new(_memoryCache, _logger, _configuration, _serviceProvider, _dbContextFactory);
+                cus.UpdateCache(null);
+
+                if (_memoryCache.TryGetValue("HolidaysCacheKey", out holidays))
+                {
+                    return accessPublicHolidayData.CheckPublicHoliday(instrumentId, dateTime, holidays);
+                }
+                else
+                {
+                    return false;
+                }
+            }
         }
 
         public void Dispose() => _timer?.Dispose();
