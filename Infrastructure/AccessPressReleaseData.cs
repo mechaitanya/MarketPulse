@@ -28,7 +28,7 @@ namespace MarketPulse.Infrastructure
 
         public List<PressRelease> GetPressReleaseList(int instrumentId, string aLanguages, string aSourceIds)
         {
-            List<PressRelease> pressReleases = new List<PressRelease>();
+            List<PressRelease> pressReleases = new();
 
             using (var sqlConnection = new SqlConnection(_connectionString))
             {
@@ -46,7 +46,7 @@ namespace MarketPulse.Infrastructure
                         {
                             while (reader.Read())
                             {
-                                PressRelease pressRelease = new PressRelease
+                                PressRelease pressRelease = new()
                                 {
                                     PR_ID = reader.GetFieldValue<long>("PressReleaseID"),
                                     PR_Title = reader.GetFieldValue<string>("Title"),

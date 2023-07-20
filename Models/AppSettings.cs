@@ -3,40 +3,41 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 
-public class AppConfig
+namespace MarketPulse.Models
 {
-    private readonly IConfiguration _configuration;
+    public record AppSettings(string? SupportEmail, string? SmtpHost, string? ConsumerKey, string? ConsumerSecret, string? ServerFilePath);
 
-    public AppConfig(IConfiguration configuration)
+    public class AppConfig
     {
-        _configuration = configuration;
-    }
+        private readonly IConfiguration _configuration;
 
-    public void GetConfig()
-    {
-        try
+        public AppConfig(IConfiguration configuration)
         {
-            AppSettings settings = _configuration.Get<AppSettings>();
-
-            string supportEmail = settings.SupportEmail;
-            string smtpHost = settings.SmtpHost;
-            string consumerKey = settings.ConsumerKey;
-            string consumerSecret = settings.ConsumerSecret;
-            string serverFilePath = settings.ServerFilePath;
+            _configuration = configuration;
         }
-        catch (Exception ex)
+
+        public void GetConfig()
         {
-            Console.WriteLine($"Error reading configuration: {ex.Message}");
+            try
+            {
+                AppSettings? settings = _configuration.Get<AppSettings>();
+                if(settings != null)
+                {
+                    string? supportEmail = settings.SupportEmail;
+                    string? smtpHost = settings.SmtpHost;
+                    string? consumerKey = settings.ConsumerKey;
+                    string? consumerSecret = settings.ConsumerSecret;
+                    string? serverFilePath = settings.ServerFilePath;
+                }
+                else
+                {
+                    Console.WriteLine("Configuration settings are not available.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error reading configuration: {ex.Message}");
+            }
         }
     }
 }
-
-public class AppSettings
-{
-    public string? SupportEmail { get; set; }
-    public string? SmtpHost { get; set; }
-    public string? ConsumerKey { get; set; }
-    public string? ConsumerSecret { get; set; }
-    public string? ServerFilePath { get; set; }
-}
-

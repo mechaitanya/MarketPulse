@@ -73,7 +73,7 @@ namespace MarketPulse.Services
 
         private static TimeSpan GetCacheDuration()
         {
-            return TimeSpan.FromHours(1);
+            return TimeSpan.FromDays(7);
         }
     }
 }

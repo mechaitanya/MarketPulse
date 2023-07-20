@@ -182,7 +182,8 @@ namespace MarketPulse.Services
                 {
                     if (!IsPublicHoliday(PRtweet.PR_Instrument_ID, dTime))
                     {
-                        Console.WriteLine($"pra template for instrument ID {instrumentId}: {PRtweet.PR_Link} at {DateTime.Now}");
+                        var text = MakeTweet(PRtweet, tweetTemplate.MessageText);
+                        Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {PRtweet.PR_Instrument_ID}");
                     }
                 }
             }
@@ -205,6 +206,11 @@ namespace MarketPulse.Services
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
             var instrumentData = await tweetBuilder.GetMOATweetMessage();
+
+            if (tweetTemplate.MessageText != null && tweetTemplate.MessageText.Contains("filename"))
+            {
+                tweetTemplate.MessageText = tweetTemplate.MessageText.Replace("{filename}", tweetType + "-" + DateTime.Now.ToString("yyMMdd"));
+            }
 
             if (!IsPublicHoliday(instrumentId, date))
             {
@@ -295,44 +301,73 @@ namespace MarketPulse.Services
 
         public static string MakeTweet<T>(T data, string messageText)
         {
-            string pattern = @"\{([^{}]+)\}:\{([^{}]+)\}";
-            MatchCollection matches = Regex.Matches(messageText, pattern);
-
-            Dictionary<string, string> keyValuePairs = new();
-
-            foreach (Match match in matches)
+            try
             {
-                string placeholder = match.Groups[0].Value;
-                string key = match.Groups[1].Value;
-                string formatSpecifier = match.Groups[2].Value;
+                string pattern = @"\{([^{}]+)\}:\{([^{}]+)\}";
+                MatchCollection matches = Regex.Matches(messageText, pattern);
 
-                keyValuePairs.Add(key, formatSpecifier);
-            }
+                Dictionary<string, string> keyValuePairs = new();
 
-            if (data != null)
-            {
-                var dataProperties = typeof(T).GetProperties();
-
-                foreach (var property in dataProperties)
+                foreach (Match match in matches)
                 {
-                    string propertyName = property.Name.ToLower();
-                    string placeholder = $"{{{propertyName.ToLower()}}}";
-                    string propertyValue = property.GetValue(data)?.ToString();
+                    string placeholder = match.Groups[0].Value;
+                    string key = match.Groups[1].Value;
+                    string formatSpecifier = match.Groups[2].Value;
 
-                    if (messageText.Contains(placeholder))
+                    keyValuePairs.Add(key, formatSpecifier);
+                }
+
+                if (matches.Count > 0)
+                {
+                    if (data != null)
                     {
-                        if (keyValuePairs.TryGetValue(propertyName.ToLower(), out var formatSpecifier))
-                        {
-                            propertyValue = DataFormatter.ApplyFormatSpecifier(propertyValue, formatSpecifier);
-                        }
+                        var dataProperties = typeof(T).GetProperties();
 
-                        messageText = messageText.Replace(placeholder, propertyValue).Replace(":{" + keyValuePairs[propertyName] + "}", " ").Trim();
-                        messageText = Regex.Replace(messageText, @"\s+", " ");
+                        foreach (var property in dataProperties)
+                        {
+                            string propertyName = property.Name.ToLower();
+                            string placeholder = $"{{{propertyName.ToLower()}}}";
+                            string propertyValue = property.GetValue(data)?.ToString();
+
+                            if (messageText.Contains(placeholder))
+                            {
+                                if (keyValuePairs.TryGetValue(propertyName, out var formatSpecifier))
+                                {
+                                    propertyValue = DataFormatter.ApplyFormatSpecifier(propertyValue, formatSpecifier);
+                                }
+                                if (keyValuePairs.ContainsKey(propertyName))
+                                {
+                                    messageText = messageText.Replace(placeholder, propertyValue).Replace(":{" + keyValuePairs[propertyName] + "}", " ").Trim();
+                                }
+                                messageText = Regex.Replace(messageText, @"\s+", " ");
+                            }
+                        }
                     }
                 }
-            }
+                if (data != null)
+                {
+                    var dataProperties = typeof(T).GetProperties();
 
-            return messageText;
+                    foreach (var property in dataProperties)
+                    {
+                        string propertyName = property.Name.ToLower();
+                        string placeholder = $"{{{propertyName.ToLower()}}}";
+                        string propertyValue = property.GetValue(data)?.ToString();
+
+                        if (messageText.Contains(placeholder))
+                        {
+                            messageText = messageText.Replace(placeholder, propertyValue).Trim();
+                            messageText = Regex.Replace(messageText, @"\s+", " ");
+                        }
+                    }
+                }
+                return messageText;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error {ex.Message} at {DateTime.Now}");
+                return null;
+            }
         }
 
         public bool IsPublicHoliday(long instrumentId, DateTime dateTime)

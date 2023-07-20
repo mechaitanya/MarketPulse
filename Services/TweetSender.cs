@@ -51,7 +51,7 @@ namespace MarketPulse.Services
         private readonly IRSSFeedServiceDbContextFactory _dbContextFactory;
         private readonly IServiceProvider _serviceProvider;
         private readonly IEmailSender _emailSender;
-        private string Username;
+        private string? Username;
         private const string URL = "https://api.twitter.com/2/tweets";
 
         public TweetSender(IConfiguration configuration, IRSSFeedServiceDbContextFactory dbContextFactory, IServiceProvider serviceProvider, IEmailSender emailSender)
@@ -108,7 +108,7 @@ namespace MarketPulse.Services
                 var oauthNonce = Guid.NewGuid().ToString("N");
                 var oauthTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
-                var oauthSignature = GenerateOAuthSignature(creds.ConsumerKey, creds.ConsumerSecret, creds.AccessToken, creds.AccessTokenSecret, oauthNonce, oauthTimestamp, tweetContent);
+                var oauthSignature = GenerateOAuthSignature(creds.ConsumerKey, creds.ConsumerSecret, creds.AccessToken, creds.AccessTokenSecret, oauthNonce, oauthTimestamp);
 
                 var authorizationHeader = GenerateAuthorizationHeader(creds.ConsumerKey, creds.AccessToken, oauthNonce, oauthTimestamp, oauthSignature);
 
@@ -124,7 +124,7 @@ namespace MarketPulse.Services
             }
         }
 
-        private static string GenerateOAuthSignature(string apiKey, string apiSecretKey, string accessToken, string accessTokenSecret, string oauthNonce, string oauthTimestamp, HttpContent tweetContent)
+        private static string GenerateOAuthSignature(string apiKey, string apiSecretKey, string accessToken, string accessTokenSecret, string oauthNonce, string oauthTimestamp)
         {
             var signatureBaseString = string.Format(
                 "POST&{0}&{1}",

@@ -20,22 +20,19 @@ namespace MarketPulse.RepositoryModels
         public async Task<InstrumentData> GetInstrumentData(int instrument)
         {
             AccessInstrumentData accessInstrumentData = new(_configuration, _logger);
-            var x = await accessInstrumentData.GetPrice(instrument);
-            return x;
+            return await accessInstrumentData.GetPrice(instrument);
         }
 
         public async Task<WeekData> GetWeedEndInstrumentData(int instrument)
         {
             AccessWeekInstrumentData accessWeekEndInstrumentData = new(_configuration, _logger);
-            var x = await accessWeekEndInstrumentData.GetWeekData(instrument);
-            return x;
+            return await accessWeekEndInstrumentData.GetWeekData(instrument);
         }
 
         public async Task<List<Earning>> GetEAInstrumentData(int instrument)
         {
             AccessEarningsData accessEarningsData = new(_configuration, _logger);
-            var x = await accessEarningsData.GetEarningList(instrument.ToString());
-            return x;
+            return await accessEarningsData.GetEarningList(instrument.ToString());
         }
     }
 }
