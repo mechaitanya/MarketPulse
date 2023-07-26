@@ -3,9 +3,8 @@ using MarketPulse.Models;
 using MarketPulse.Services;
 using MarketPulse.Utility;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Serilog;
+using Serilog.Events;
 
 namespace MarketPulse
 {
@@ -13,7 +12,27 @@ namespace MarketPulse
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Warning()
+                .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day, restrictedToMinimumLevel: LogEventLevel.Information)
+                .CreateLogger();
+
+            try
+            {
+                Log.Information("Starting Marketpulse...");
+
+                CreateHostBuilder(args).Build().Run();
+
+                Log.Information("Marketpulse Stopped...");
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly.");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args)
@@ -25,6 +44,11 @@ namespace MarketPulse
                         .AddJsonFile($"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true)
                         .AddEnvironmentVariables();
                 })
+                 .ConfigureLogging((hostContext, logging) =>
+                 {
+                     logging.ClearProviders();
+                     logging.AddSerilog();
+                 })
                 .ConfigureServices((hostContext, services) =>
                 {
                     services.AddMemoryCache();

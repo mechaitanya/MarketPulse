@@ -63,7 +63,7 @@ namespace MarketPulse.Infrastructure
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogInformation($"{DateTime.Now:HH:mm:ss} ERROR: {ex.Message}");
+                        _logger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} UTC in GetPressReleaseList");
                     }
                 }
             }
@@ -86,7 +86,7 @@ namespace MarketPulse.Infrastructure
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogInformation($"ERROR: {ex.Message} at {DateTime.Now:HH:mm:ss}");
+                        _logger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} UTC in UpdateTweetedPressReleases");
                     }
                 }
             }

@@ -43,7 +43,7 @@ namespace MarketPulse.Services
             }
             catch (Exception ex)
             {
-                _myLogger.LogError($"Error sending mail at {DateTime.Now.ToShortDateString()}: " + ex.ToString());
+                _myLogger.LogError($"Error sending mail at {DateTime.UtcNow.ToShortDateString()} UTC: " + ex.ToString());
             }
         }
     }

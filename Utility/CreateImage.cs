@@ -10,20 +10,22 @@ namespace MarketPulse.Utility
     {
         private readonly IConfiguration _configuration;
         private readonly string _serverFilePath;
+        private readonly IMyLogger _myLogger;
 
-        public CreateImage(IConfiguration configuration)
+        public CreateImage(IConfiguration configuration, IMyLogger myLogger)
         {
             _configuration = configuration;
             _serverFilePath = _configuration["serverFilePath"]!;
+            _myLogger = myLogger;
         }
 
-        public string GeneratePlot(int instrumentID, string strFileName)
+        public string GeneratePlot(int instrumentID, string strFileName, string ticker)
         {
-            string graphImage = _serverFilePath + strFileName +".png";
+            string graphImage = Path.Combine(_serverFilePath, ticker, strFileName + ".png");
 
             try
             {
-                AccessWeekGraphData weekGraph = new(_configuration);
+                AccessWeekGraphData weekGraph = new(_configuration, _myLogger);
                 List<decimal> prices = new();
                 try
                 {
@@ -53,7 +55,7 @@ namespace MarketPulse.Utility
                     plt.XAxis.TickMarkColor(color: Color.FromArgb(100, Color.Transparent));
                     plt.YAxis.TickMarkColor(color: Color.FromArgb(100, Color.Transparent));
                     plt.XAxis.LabelStyle(color: Color.FromArgb(100, Color.Transparent));
-                    plt.YAxis.LabelStyle(color: Color.FromArgb(110,110,110), fontName: "OpenSans", fontSize: 10);
+                    plt.YAxis.LabelStyle(color: Color.FromArgb(110, 110, 110), fontName: "OpenSans", fontSize: 10);
 
                     plt.AddScatter(x, y);
                     plt.SaveFig(graphImage);
@@ -61,7 +63,7 @@ namespace MarketPulse.Utility
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message} at {DateTime.Now} in Generate plot");
+                _myLogger.LogError($"Error: {ex.Message} at {DateTime.UtcNow} UTC in Generate plot");
             }
 
             return graphImage;
@@ -71,7 +73,7 @@ namespace MarketPulse.Utility
         {
             try
             {
-                string graphImageWithPath = GeneratePlot(instrumentID, strFileName);
+                string graphImageWithPath = GeneratePlot(instrumentID, strFileName, ticker ?? "test");
                 imagetemplate = Regex.Replace(imagetemplate, "{graphImagePath}", graphImageWithPath, RegexOptions.IgnoreCase);
 
                 var converter = new HtmlConverter();
@@ -83,17 +85,17 @@ namespace MarketPulse.Utility
                     Directory.CreateDirectory(_serverFilePath);
                 }
 
-                bool isExists = Directory.Exists(Path.Combine(_serverFilePath, ticker?? "test"));
+                bool isExists = Directory.Exists(Path.Combine(_serverFilePath, ticker ?? "test"));
                 if (!isExists)
                 {
-                    Directory.CreateDirectory(Path.Combine(_serverFilePath, ticker??"test"));
+                    Directory.CreateDirectory(Path.Combine(_serverFilePath, ticker ?? "test"));
                 }
 
-                File.WriteAllBytes(Path.Combine(_serverFilePath, ticker?? "test", strFileName + extension), bytes);
+                File.WriteAllBytes(Path.Combine(_serverFilePath, ticker ?? "test", strFileName + extension), bytes);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"error: {ex.Message} in CreateInteractiveImageWithGraph");
+                _myLogger.LogError($"Error: {ex.Message} at {DateTime.UtcNow} UTC in CreateInteractiveImageWithGraph");
             }
         }
 
@@ -119,7 +121,7 @@ namespace MarketPulse.Utility
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error: {ex.Message} in CreateInteractiveImage");
+                _myLogger.LogError($"Error: {ex.Message} at {DateTime.UtcNow} UTC in CreateInteractiveImage");
             }
         }
     }

@@ -5,8 +5,6 @@ using MarketPulse.Utility;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
-using static MarketPulse.Infrastructure.AccessInstrumentData;
 
 namespace MarketPulse.Services
 {
@@ -32,14 +30,12 @@ namespace MarketPulse.Services
         public Task StartAsync(CancellationToken cancellationToken)
         {
             _timer = new Timer(ExecuteScheduledTweets, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
             _timer?.Change(Timeout.Infinite, 0);
-
             return Task.CompletedTask;
         }
 
@@ -49,8 +45,8 @@ namespace MarketPulse.Services
             {
                 var dbContext = _dbContextFactory.CreateDbContext();
 
-                var currentTime = DateTime.Now.TimeOfDay;
-                var currentDayOfWeek = DateTime.Now.DayOfWeek.ToString();
+                var currentTime = DateTime.UtcNow.TimeOfDay;
+                var currentDayOfWeek = DateTime.UtcNow.DayOfWeek.ToString();
                 AccessTimeZoneData DayLight = new(_configuration, _logger);
 
                 var tweets = dbContext.TweetSchedule
@@ -72,7 +68,10 @@ namespace MarketPulse.Services
                 foreach (var tweet in tweets)
                 {
                     Task tweetExecutionTask;
-                    tweetExecutionTask = ExecuteTweetAsync(tweet.InstrumentId, tweet.TweetType, DateTime.Today.Add(tweet.TweetTime));
+
+                    DateTime localDateTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow.Add(tweet.TweetTime), TimeZoneInfo.Local);
+
+                    tweetExecutionTask = ExecuteTweetAsync(tweet.InstrumentId, tweet.TweetType, localDateTime);
                     tweetExecutionTasks.Add(tweetExecutionTask);
                 }
 
@@ -86,7 +85,7 @@ namespace MarketPulse.Services
 
         private static bool IsTweetTimeMatchingFrequency(TimeSpan tweetTime, string frequencyType, int frequencyValue)
         {
-            var currentTime = DateTime.Now.TimeOfDay;
+            var currentTime = DateTime.UtcNow.TimeOfDay;
 
             switch (frequencyType.ToLower())
             {
@@ -220,7 +219,7 @@ namespace MarketPulse.Services
             {
                 if (tweetTemplate.TweetLink != null && tweetTemplate.HtmlTemplate != null)
                 {
-                    CreateImage cImage = new(_configuration);
+                    CreateImage cImage = new(_configuration, _logger);
                     cImage.CreateInteractiveImageWithGraph(instrumentId, MakeTweet(instrumentData, tweetTemplate.HtmlTemplate), fileName,
                        Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
@@ -264,7 +263,7 @@ namespace MarketPulse.Services
             {
                 if (tweetTemplate.TweetLink != null && tweetTemplate.HtmlTemplate != null)
                 {
-                    CreateImage cImage = new(_configuration);
+                    CreateImage cImage = new(_configuration, _logger);
                     cImage.CreateInteractiveImageWithGraph(instrumentId, MakeTweet(instrumentData, tweetTemplate.HtmlTemplate), fileName,
                         Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
@@ -310,7 +309,7 @@ namespace MarketPulse.Services
                 {
                     tweetTemplate.HtmlTemplate = MakeTweet(weekData, tweetTemplate.HtmlTemplate);
                     tweetTemplate.HtmlTemplate = MakeTweet(instrumentData, tweetTemplate.HtmlTemplate);
-                    CreateImage cImage = new(_configuration);
+                    CreateImage cImage = new(_configuration, _logger);
                     cImage.CreateInteractiveImageWithGraph(Convert.ToInt32(instrumentId), tweetTemplate.HtmlTemplate, fileName,
                         Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
                     var text = MakeTweet(weekData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
@@ -433,8 +432,8 @@ namespace MarketPulse.Services
             }
             else
             {
-                CacheUpdatingService cus = new(_memoryCache, _logger, _configuration, _serviceProvider, _dbContextFactory);
-                cus.UpdateCache(null);
+                CacheUpdatingService _CUS = new(_memoryCache, _logger, _configuration, _serviceProvider, _dbContextFactory);
+                _CUS.UpdateCache(null);
 
                 if (_memoryCache.TryGetValue("HolidaysCacheKey", out holidays))
                 {

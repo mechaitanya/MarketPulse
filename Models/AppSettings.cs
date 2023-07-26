@@ -1,19 +1,16 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System;
-
-namespace MarketPulse.Models
+﻿namespace MarketPulse.Models
 {
     public record AppSettings(string? SupportEmail, string? SmtpHost, string? ConsumerKey, string? ConsumerSecret, string? ServerFilePath);
 
     public class AppConfig
     {
         private readonly IConfiguration _configuration;
+        private readonly IMyLogger _myLogger;
 
-        public AppConfig(IConfiguration configuration)
+        public AppConfig(IConfiguration configuration, IMyLogger myLogger)
         {
             _configuration = configuration;
+            _myLogger = myLogger;
         }
 
         public void GetConfig()
@@ -21,7 +18,7 @@ namespace MarketPulse.Models
             try
             {
                 AppSettings? settings = _configuration.Get<AppSettings>();
-                if(settings != null)
+                if (settings != null)
                 {
                     string? supportEmail = settings.SupportEmail;
                     string? smtpHost = settings.SmtpHost;
@@ -31,12 +28,12 @@ namespace MarketPulse.Models
                 }
                 else
                 {
-                    Console.WriteLine("Configuration settings are not available.");
+                    _myLogger.LogWarning($"Configuration settings are not available at {DateTime.UtcNow} UTC");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error reading configuration: {ex.Message}");
+                _myLogger.LogWarning($"Error reading configurations: {ex.Message} at {DateTime.UtcNow} UTC");
             }
         }
     }

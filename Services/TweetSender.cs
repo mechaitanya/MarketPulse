@@ -18,28 +18,36 @@ namespace MarketPulse.Services
     {
         private readonly IRSSFeedServiceDbContextFactory _dbContextFactory;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IMyLogger _logger;
 
-        public UserTokens(IRSSFeedServiceDbContextFactory dbContextFactory, IServiceProvider serviceProvider)
+        public UserTokens(IRSSFeedServiceDbContextFactory dbContextFactory, IServiceProvider serviceProvider, IMyLogger logger)
         {
             _dbContextFactory = dbContextFactory;
             _serviceProvider = serviceProvider;
+            _logger = logger;
         }
 
         public (string? AccessCode, string? AccessSecretToken, string? UserName) GetAccessCodeAndSecretToken(int instrumentId)
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                using var dbContext = _dbContextFactory.CreateDbContext();
-                var user = dbContext.Users
-                    .Where(u => u.InstrumentId == instrumentId)
-                    .Select(u => new { u.AccessCode, u.AccessSecretToken, u.UserName })
-                    .FirstOrDefault();
-
-                if (user != null)
+                try
                 {
-                    return (user.AccessCode, user.AccessSecretToken, user.UserName);
-                }
+                    using var dbContext = _dbContextFactory.CreateDbContext();
+                    var user = dbContext.Users
+                        .Where(u => u.InstrumentId == instrumentId)
+                        .Select(u => new { u.AccessCode, u.AccessSecretToken, u.UserName })
+                        .FirstOrDefault();
 
+                    if (user != null)
+                    {
+                        return (user.AccessCode, user.AccessSecretToken, user.UserName);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"error: {ex.Message} at GetAccessCodeAndSecretToken at {DateTime.UtcNow} UTC");
+                }
                 return (null, null, null);
             }
         }
@@ -51,15 +59,17 @@ namespace MarketPulse.Services
         private readonly IRSSFeedServiceDbContextFactory _dbContextFactory;
         private readonly IServiceProvider _serviceProvider;
         private readonly IEmailSender _emailSender;
+        private readonly IMyLogger _logger;
         private string? Username;
         private const string URL = "https://api.twitter.com/2/tweets";
 
-        public TweetSender(IConfiguration configuration, IRSSFeedServiceDbContextFactory dbContextFactory, IServiceProvider serviceProvider, IEmailSender emailSender)
+        public TweetSender(IConfiguration configuration, IRSSFeedServiceDbContextFactory dbContextFactory, IServiceProvider serviceProvider, IEmailSender emailSender, IMyLogger logger)
         {
             _configuration = configuration;
             _dbContextFactory = dbContextFactory;
             _serviceProvider = serviceProvider;
             _emailSender = emailSender;
+            _logger = logger;
         }
 
         public async Task SendTweet(int instrumentId, string message)
@@ -67,7 +77,7 @@ namespace MarketPulse.Services
             Credentials creds = new();
             try
             {
-                UserTokens ut = new(_dbContextFactory, _serviceProvider);
+                UserTokens ut = new(_dbContextFactory, _serviceProvider, _logger);
 
                 (string? AccessCode, string? AccessSecretToken, string? UserName) = ut.GetAccessCodeAndSecretToken(instrumentId);
 
@@ -81,23 +91,24 @@ namespace MarketPulse.Services
                 }
                 else
                 {
-                    Console.WriteLine("User not found or AccessCode and AccessSecretToken are null.");
+                    _logger.LogError($"User not found or AccessCode/AccessSecretToken are null at {DateTime.UtcNow} UTC");
                 }
 
-                var response = await AuthenticateUserAndSendTweet(creds, message);
+                var response = await AuthenticateUserAndSendTweet(creds, message, _logger, Username);
 
                 if (response?.StatusCode == HttpStatusCode.Unauthorized)
                 {
+                    _logger.LogError($"{Username} is not authorized at {DateTime.UtcNow} UTC");
                     _emailSender.SendAuthorizationFailedEmail(Username);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"HTTP request error: {ex.Message}");
+                _logger.LogError($"error: {ex.Message} at SendTweet at {DateTime.UtcNow} UTC");
             }
         }
 
-        public static async Task<HttpResponseMessage?> AuthenticateUserAndSendTweet(Credentials creds, string message)
+        public static async Task<HttpResponseMessage?> AuthenticateUserAndSendTweet(Credentials creds, string message, IMyLogger _logger, string Username)
         {
             try
             {
@@ -120,6 +131,7 @@ namespace MarketPulse.Services
             }
             catch (Exception)
             {
+                _logger.LogError($"{Username} is not authorized at {DateTime.UtcNow} UTC");
                 return null;
             }
         }

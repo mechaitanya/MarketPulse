@@ -144,7 +144,7 @@ namespace MarketPulse.Infrastructure
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogInformation($"{DateTime.Now:HH:mm:ss} ERROR: {ex.Message}");
+                        _logger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} UTC in GetPrice.");
                     }
                 }
             }

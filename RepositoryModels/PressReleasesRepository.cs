@@ -18,10 +18,17 @@ namespace MarketPulse.RepositoryModels
 
         public List<PressRelease> GetPressReleases(int instrument, string prLanguages, string prSourceIDs)
         {
-            AccessPressReleaseData accessPressRelease = new(_configuration, _logger);
-            var x = accessPressRelease.GetPressReleaseList(instrument, string.Join(",", prLanguages),
-                string.Join(",", prSourceIDs));
-            return x;
+            try
+            {
+                AccessPressReleaseData accessPressRelease = new(_configuration, _logger);
+                return accessPressRelease.GetPressReleaseList(instrument, string.Join(",", prLanguages),
+                    string.Join(",", prSourceIDs));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error {ex.Message} in GetPressReleases for instrument: {instrument}");
+                return new List<PressRelease>();
+            }
         }
     }
 }

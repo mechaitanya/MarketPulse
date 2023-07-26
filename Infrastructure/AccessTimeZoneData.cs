@@ -32,7 +32,7 @@ namespace MarketPulse.Infrastructure
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogInformation($"ERROR: {ex.Message} at {DateTime.Now:HH:mm:ss}");
+                        _logger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} UTC for instrument: {instrumentId} in GetTimezone");
                         throw;
                     }
                 }
@@ -65,9 +65,8 @@ namespace MarketPulse.Infrastructure
             }
             catch (Exception ex)
             {
-                _logger.LogError($"ERROR: {ex.Message} at {DateTime.Now:HH:mm:ss}, InstrumentId: {instrumentId}, Problem in accessing SQL Server database, procedure named spMPulseSelectTimezoneByInstrumentId");
+                _logger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss}, InstrumentId: {instrumentId} in GetDayLightSavingTime");
             }
-
             return tweetTime;
         }
     }

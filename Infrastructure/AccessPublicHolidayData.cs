@@ -61,7 +61,7 @@ namespace MarketPulse.Infrastructure
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogInformation($"ERROR: {ex.Message} at {DateTime.Now:HH:mm:ss}");
+                        _logger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} UTC in SelectAllPublicHolidaysAsync for instrument: {stringOfInstrumentIds}");
                     }
                 }
             }
@@ -70,11 +70,19 @@ namespace MarketPulse.Infrastructure
 
         public bool CheckPublicHoliday(long instrumentId, DateTime date, List<PublicHoliday> lsPublicHoliday)
         {
-            lsPublicHoliday = lsPublicHoliday.Where(x => x.Fc_Datetime.Date == date.Date && x.InstrumentId == instrumentId).ToList();
+            try
+            {
+                lsPublicHoliday = lsPublicHoliday.Where(x => x.Fc_Datetime.Date == date.Date && x.InstrumentId == instrumentId).ToList();
 
-            bool isPublicHoliday = lsPublicHoliday.Count > 0;
+                bool isPublicHoliday = lsPublicHoliday.Count > 0;
 
-            return isPublicHoliday;
+                return isPublicHoliday;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} in CheckPublicHoliday for instrument: {instrumentId}");
+                return false;
+            }
         }
 
         public string GetWeekendDays(int instrumentId)
@@ -96,7 +104,7 @@ namespace MarketPulse.Infrastructure
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogInformation($"ERROR: {ex.Message} at {DateTime.Now:HH:mm:ss}");
+                        _logger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} UTC in GetWeekendDays for instrument: {instrumentId}");
                         throw;
                     }
                 }

@@ -15,10 +15,12 @@ namespace MarketPulse.Infrastructure
     public class AccessWeekGraphData
     {
         private readonly string _connectionString;
+        private readonly IMyLogger _myLogger;
 
-        public AccessWeekGraphData(IConfiguration configuration)
+        public AccessWeekGraphData(IConfiguration configuration, IMyLogger myLogger)
         {
             _connectionString = configuration.GetConnectionString("SharkSiteConnectionString");
+            _myLogger = myLogger;
         }
 
         public List<WeekGraphData> GetWeekDataForGraph(int instrumentId)
@@ -53,7 +55,7 @@ namespace MarketPulse.Infrastructure
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"ERROR: {ex.Message}");
+                        _myLogger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} UTC for instrument: {instrumentId} in GetWeekDataForGraph");
                     }
                 }
             }
@@ -64,12 +66,18 @@ namespace MarketPulse.Infrastructure
         public List<decimal> GetPriceForGraph(int instrumentId)
         {
             List<decimal> price = new();
-            List<WeekGraphData> weekGraphDataValues = GetWeekDataForGraph(instrumentId);
-            foreach (WeekGraphData weekGraphData in weekGraphDataValues)
+            try
             {
-                price.Add(weekGraphData.Price);
+                List<WeekGraphData> weekGraphDataValues = GetWeekDataForGraph(instrumentId);
+                foreach (WeekGraphData weekGraphData in weekGraphDataValues)
+                {
+                    price.Add(weekGraphData.Price);
+                }
             }
-
+            catch (Exception ex)
+            {
+                _myLogger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} UTC for instrument: {instrumentId} in GetPriceForGraph");
+            }
             return price;
         }
     }

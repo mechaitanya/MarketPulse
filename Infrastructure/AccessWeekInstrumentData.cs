@@ -18,12 +18,12 @@ namespace MarketPulse.Infrastructure
     public class AccessWeekInstrumentData
     {
         private readonly string _connectionString;
-        private readonly IMyLogger _logger;
+        private readonly IMyLogger _mylogger;
 
-        public AccessWeekInstrumentData(IConfiguration configuration, IMyLogger logger)
+        public AccessWeekInstrumentData(IConfiguration configuration, IMyLogger mylogger)
         {
             _connectionString = configuration.GetConnectionString("SharkSiteConnectionString");
-            _logger = logger;
+            _mylogger = mylogger;
         }
 
         public async Task<WeekData> GetWeekData(int instrumentID)
@@ -57,7 +57,7 @@ namespace MarketPulse.Infrastructure
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"ERROR: {ex.Message}");
+                        _mylogger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss} UTC for instrument: {instrumentID} in GetWeekData");
                     }
                 }
             }

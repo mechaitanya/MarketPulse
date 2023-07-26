@@ -64,7 +64,7 @@ namespace MarketPulse.Models
         {
             if (_properties.TweetType.ToLower() == "eow")
             {
-                WeekData iData = await _instrumentDataRepository.GetWeedEndInstrumentData(_properties.InstrumentId);
+                WeekData iData = await _instrumentDataRepository.GetWeekEndInstrumentData(_properties.InstrumentId);
                 return iData;
             }
             else
