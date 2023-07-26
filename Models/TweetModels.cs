@@ -19,6 +19,7 @@
         public string? TweetFrequencyType { get; set; }
         public int TweetFrequencyValue { get; set; }
         public int TemplateId { get; set; }
+        public bool isActive { get; set; }
 
         public Users User { get; set; }
     }
@@ -31,6 +32,7 @@
         public string? TweetLink { get; set; }
         public string? SourceId { get; set; }
         public string? LanguageType { get; set; }
+        public string? HtmlTemplate { get; set; }
     }
 
     public class InstrumentTweets

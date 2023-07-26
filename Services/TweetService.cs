@@ -5,6 +5,8 @@ using MarketPulse.Utility;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using static MarketPulse.Infrastructure.AccessInstrumentData;
 
 namespace MarketPulse.Services
 {
@@ -57,6 +59,7 @@ namespace MarketPulse.Services
                     .Where(t =>
                         t.TweetDays.Contains(currentDayOfWeek) &&
                         t.TweetTime <= currentTime &&
+                        t.isActive == true &&
                         IsTweetTimeMatchingFrequency(t.TweetTime, t.TweetFrequencyType, t.TweetFrequencyValue))
                     .Join(
                         dbContext.InstrumentTweets,
@@ -207,15 +210,28 @@ namespace MarketPulse.Services
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
             var instrumentData = await tweetBuilder.GetMOATweetMessage();
 
-            if (tweetTemplate.MessageText != null && tweetTemplate.MessageText.Contains("filename"))
+            var fileName = tweetType + "-" + DateTime.Now.ToString("yyMMdd");
+            if (tweetTemplate.TweetLink != null && tweetTemplate.TweetLink.Contains("filename"))
             {
-                tweetTemplate.MessageText = tweetTemplate.MessageText.Replace("{filename}", tweetType + "-" + DateTime.Now.ToString("yyMMdd"));
+                tweetTemplate.TweetLink = tweetTemplate.TweetLink.Replace("{filename}", fileName);
             }
 
             if (!IsPublicHoliday(instrumentId, date))
             {
-                var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
-                Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
+                if (tweetTemplate.TweetLink != null && tweetTemplate.HtmlTemplate != null)
+                {
+                    CreateImage cImage = new(_configuration);
+                    cImage.CreateInteractiveImageWithGraph(instrumentId, MakeTweet(instrumentData, tweetTemplate.HtmlTemplate), fileName,
+                       Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
+                    var text = MakeTweet(instrumentData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
+
+                    Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
+                }
+                else
+                {
+                    var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
+                    Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
+                }
             }
 
             await Task.Delay(5);
@@ -238,10 +254,28 @@ namespace MarketPulse.Services
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
             var instrumentData = await tweetBuilder.GetEODTweetMessage();
 
+            var fileName = tweetType + "-" + DateTime.Now.ToString("yyMMdd");
+            if (tweetTemplate.TweetLink != null && tweetTemplate.TweetLink.Contains("filename"))
+            {
+                tweetTemplate.TweetLink = tweetTemplate.TweetLink.Replace("{filename}", fileName);
+            }
+
             if (!IsPublicHoliday(instrumentId, date))
             {
-                var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
-                Console.WriteLine($"{text} at {DateTime.Now}");
+                if (tweetTemplate.TweetLink != null && tweetTemplate.HtmlTemplate != null)
+                {
+                    CreateImage cImage = new(_configuration);
+                    cImage.CreateInteractiveImageWithGraph(instrumentId, MakeTweet(instrumentData, tweetTemplate.HtmlTemplate), fileName,
+                        Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
+                    var text = MakeTweet(instrumentData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
+
+                    Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
+                }
+                else
+                {
+                    var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
+                    Console.WriteLine($"{text} at {DateTime.Now}");
+                }
             }
             await Task.Delay(5);
         }
@@ -261,12 +295,32 @@ namespace MarketPulse.Services
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
+            var instrumentData = await tweetBuilder.GetEODTweetMessage();
             var weekData = await tweetBuilder.GetEOWTweetMessage();
+
+            var fileName = tweetType + "-" + DateTime.Now.ToString("yyMMdd");
+            if (tweetTemplate.TweetLink != null && tweetTemplate.TweetLink.Contains("filename"))
+            {
+                tweetTemplate.TweetLink = tweetTemplate.TweetLink.Replace("{filename}", fileName);
+            }
 
             if (!IsPublicHoliday(instrumentId, date))
             {
-                var text = MakeTweet(weekData, tweetTemplate.MessageText);
-                Console.WriteLine($"{text} at {DateTime.Now}");
+                if (tweetTemplate.TweetLink != null && tweetTemplate.HtmlTemplate != null)
+                {
+                    tweetTemplate.HtmlTemplate = MakeTweet(weekData, tweetTemplate.HtmlTemplate);
+                    tweetTemplate.HtmlTemplate = MakeTweet(instrumentData, tweetTemplate.HtmlTemplate);
+                    CreateImage cImage = new(_configuration);
+                    cImage.CreateInteractiveImageWithGraph(Convert.ToInt32(instrumentId), tweetTemplate.HtmlTemplate, fileName,
+                        Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
+                    var text = MakeTweet(weekData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
+                    Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
+                }
+                else
+                {
+                    var text = MakeTweet(weekData, tweetTemplate.MessageText);
+                    Console.WriteLine($"{text} at {DateTime.Now}");
+                }
             }
             await Task.Delay(5);
         }

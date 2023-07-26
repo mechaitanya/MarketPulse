@@ -43,6 +43,7 @@ public class RSSFeedServiceDbContext : DbContext
             entity.Property(e => e.TweetFrequencyType).HasColumnName("TweetFrequencyType");
             entity.Property(e => e.TweetFrequencyValue).HasColumnName("TweetFrequencyValue");
             entity.Property(e => e.TemplateId).HasColumnName("TemplateId");
+            entity.Property(e => e.isActive).HasColumnName("isActive");
 
             entity.HasOne(e => e.User)
                 .WithMany()
@@ -62,6 +63,7 @@ public class RSSFeedServiceDbContext : DbContext
             entity.Property(e => e.TweetLink).HasColumnName("TweetLink").IsRequired(false);
             entity.Property(e => e.SourceId).HasColumnName("SourceId").IsRequired(false);
             entity.Property(e => e.LanguageType).HasColumnName("LanguageType");
+            entity.Property(e => e.HtmlTemplate).HasColumnName("HtmlTemplate");
         });
 
         modelBuilder.Entity<InstrumentTweets>(entity =>

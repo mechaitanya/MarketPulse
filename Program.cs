@@ -1,6 +1,7 @@
 using MarketPulse.DbContext;
 using MarketPulse.Models;
 using MarketPulse.Services;
+using MarketPulse.Utility;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +34,7 @@ namespace MarketPulse
                     services.AddSingleton<IMyLogger, MyLogger>();
                     services.AddSingleton<IEmailSender, EmailSender>();
                     services.AddSingleton<ITweetProperties, TweetProperties>();
+                    services.AddScoped<CreateImage>();
                     services.Configure<AppSettings>(hostContext.Configuration.GetSection("AppSettings"));
                     services.AddScoped<AppConfig>();
                     services.AddDbContext<RSSFeedServiceDbContext>(options =>

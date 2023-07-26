@@ -49,7 +49,7 @@ namespace MarketPulse.Models
 
         public async Task<InstrumentData> GetEODTweetMessage()
         {
-            if (_properties.TweetType.ToLower() == "eod")
+            if (_properties.TweetType.ToLower() == "eod" || _properties.TweetType.ToLower() == "eow")
             {
                 InstrumentData iData = await _instrumentDataRepository.GetInstrumentData(_properties.InstrumentId);
                 return iData;
