@@ -63,7 +63,7 @@ namespace MarketPulse
                     services.AddScoped<AppConfig>();
                     services.AddDbContext<RSSFeedServiceDbContext>(options =>
                     {
-                        options.UseSqlServer(hostContext.Configuration.GetConnectionString("DefaultConnection"));
+                        options.UseSqlServer(hostContext.Configuration.GetConnectionString("FeedServiceConnectionString"));
                     }, ServiceLifetime.Singleton);
                 })
                 .UseWindowsService();

@@ -281,7 +281,7 @@ namespace MarketPulse.Services
 
         private async Task ProcessEOWTweets(int instrumentId, TweetTemplates tweetTemplate, string tweetType, DateTime dTime)
         {
-            TweetProperties _tweetProperties = new()
+            var _tweetProperties = new TweetProperties
             {
                 InstrumentId = instrumentId,
                 TweetType = tweetType,
@@ -290,10 +290,10 @@ namespace MarketPulse.Services
                 LanguageID = tweetTemplate.LanguageType
             };
 
-            AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
+            var accessTimeZoneData = new AccessTimeZoneData(_configuration, _logger);
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
-            TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
+            var tweetBuilder = new TweetBuilder(_tweetProperties, _logger, _configuration);
             var instrumentData = await tweetBuilder.GetEODTweetMessage();
             var weekData = await tweetBuilder.GetEOWTweetMessage();
 
@@ -307,12 +307,12 @@ namespace MarketPulse.Services
             {
                 if (tweetTemplate.TweetLink != null && tweetTemplate.HtmlTemplate != null)
                 {
-                    tweetTemplate.HtmlTemplate = MakeTweet(weekData, tweetTemplate.HtmlTemplate);
-                    tweetTemplate.HtmlTemplate = MakeTweet(instrumentData, tweetTemplate.HtmlTemplate);
-                    CreateImage cImage = new(_configuration, _logger);
-                    cImage.CreateInteractiveImageWithGraph(Convert.ToInt32(instrumentId), tweetTemplate.HtmlTemplate, fileName,
+                    var htmlTemplate = MakeTweet(weekData, tweetTemplate.HtmlTemplate);
+                    htmlTemplate = MakeTweet(instrumentData, htmlTemplate);
+                    var cImage = new CreateImage(_configuration, _logger);
+                    cImage.CreateInteractiveImageWithGraph(Convert.ToInt32(instrumentId), htmlTemplate, fileName,
                         Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
-                    var text = MakeTweet(weekData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
+                    var text = MakeTweet(weekData, $"{tweetTemplate.MessageText} {(tweetTemplate.TweetLink != null ? tweetTemplate.TweetLink.Replace("{ticker}", instrumentData.Ticker ?? "test").Trim() : " ")}");
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
                 else
@@ -321,6 +321,7 @@ namespace MarketPulse.Services
                     Console.WriteLine($"{text} at {DateTime.Now}");
                 }
             }
+
             await Task.Delay(5);
         }
 
