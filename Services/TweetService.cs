@@ -16,15 +16,17 @@ namespace MarketPulse.Services
         private readonly IMyLogger _logger;
         private readonly IConfiguration _configuration;
         private readonly IMemoryCache _memoryCache;
+        private readonly IEmailSender _emailSender;
 
         public TweetService(IServiceProvider serviceProvider, IRSSFeedServiceDbContextFactory dbContextFactory,
-            IMyLogger logger, IConfiguration configuration, IMemoryCache memoryCache)
+            IMyLogger logger, IConfiguration configuration, IMemoryCache memoryCache, IEmailSender emailSender)
         {
             _serviceProvider = serviceProvider;
             _dbContextFactory = dbContextFactory;
             _logger = logger;
             _configuration = configuration;
             _memoryCache = memoryCache;
+            _emailSender = emailSender;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -175,6 +177,7 @@ namespace MarketPulse.Services
                 LanguageID = tweetTemplate.LanguageType
             };
 
+            TweetSender ts = new(_configuration, _dbContextFactory, _serviceProvider, _emailSender, _logger);
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
             var totaltweets = tweetBuilder.GetPRATweetMessage();
 
@@ -185,6 +188,7 @@ namespace MarketPulse.Services
                     if (!IsPublicHoliday(PRtweet.PR_Instrument_ID, dTime))
                     {
                         var text = MakeTweet(PRtweet, tweetTemplate.MessageText);
+                        await ts.SendTweet(instrumentId, text);
                         Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {PRtweet.PR_Instrument_ID}");
                     }
                 }
@@ -203,6 +207,7 @@ namespace MarketPulse.Services
                 LanguageID = tweetTemplate.LanguageType
             };
 
+            TweetSender ts = new(_configuration, _dbContextFactory, _serviceProvider, _emailSender, _logger);
             AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
@@ -223,12 +228,13 @@ namespace MarketPulse.Services
                     cImage.CreateInteractiveImageWithGraph(instrumentId, MakeTweet(instrumentData, tweetTemplate.HtmlTemplate), fileName,
                        Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
-
+                    await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
                 else
                 {
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
+                    await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
             }
@@ -247,6 +253,7 @@ namespace MarketPulse.Services
                 LanguageID = tweetTemplate.LanguageType
             };
 
+            TweetSender ts = new(_configuration, _dbContextFactory, _serviceProvider, _emailSender, _logger);
             AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
@@ -267,12 +274,13 @@ namespace MarketPulse.Services
                     cImage.CreateInteractiveImageWithGraph(instrumentId, MakeTweet(instrumentData, tweetTemplate.HtmlTemplate), fileName,
                         Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
-
+                    await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
                 else
                 {
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
+                    await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now}");
                 }
             }
@@ -290,6 +298,7 @@ namespace MarketPulse.Services
                 LanguageID = tweetTemplate.LanguageType
             };
 
+            TweetSender ts = new(_configuration, _dbContextFactory, _serviceProvider, _emailSender, _logger);
             var accessTimeZoneData = new AccessTimeZoneData(_configuration, _logger);
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
@@ -313,11 +322,13 @@ namespace MarketPulse.Services
                     cImage.CreateInteractiveImageWithGraph(Convert.ToInt32(instrumentId), htmlTemplate, fileName,
                         Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
                     var text = MakeTweet(weekData, $"{tweetTemplate.MessageText} {(tweetTemplate.TweetLink != null ? tweetTemplate.TweetLink.Replace("{ticker}", instrumentData.Ticker ?? "test").Trim() : " ")}");
+                    await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
                 else
                 {
                     var text = MakeTweet(weekData, tweetTemplate.MessageText);
+                    await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now}");
                 }
             }
@@ -336,6 +347,7 @@ namespace MarketPulse.Services
                 LanguageID = tweetTemplate.LanguageType
             };
 
+            TweetSender ts = new(_configuration, _dbContextFactory, _serviceProvider, _emailSender, _logger);
             AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
             var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
@@ -347,6 +359,7 @@ namespace MarketPulse.Services
                 if (!IsPublicHoliday(instrumentId, date))
                 {
                     var text = MakeTweet(earning, tweetTemplate.MessageText);
+                    await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now}");
                 }
             }
@@ -362,7 +375,7 @@ namespace MarketPulse.Services
 
                 Dictionary<string, string> keyValuePairs = new();
 
-                foreach (Match match in matches)
+                foreach (Match match in matches.Cast<Match>())
                 {
                     string placeholder = match.Groups[0].Value;
                     string key = match.Groups[1].Value;
