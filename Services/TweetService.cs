@@ -188,7 +188,7 @@ namespace MarketPulse.Services
                     if (!IsPublicHoliday(PRtweet.PR_Instrument_ID, dTime))
                     {
                         var text = MakeTweet(PRtweet, tweetTemplate.MessageText);
-                        await ts.SendTweet(instrumentId, text);
+                        //await ts.SendTweet(instrumentId, text);
                         Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {PRtweet.PR_Instrument_ID}");
                     }
                 }
@@ -228,13 +228,13 @@ namespace MarketPulse.Services
                     cImage.CreateInteractiveImageWithGraph(instrumentId, MakeTweet(instrumentData, tweetTemplate.HtmlTemplate), fileName,
                        Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
-                    await ts.SendTweet(instrumentId, text);
+                    //await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
                 else
                 {
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
-                    await ts.SendTweet(instrumentId, text);
+                    //await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
             }
@@ -274,13 +274,13 @@ namespace MarketPulse.Services
                     cImage.CreateInteractiveImageWithGraph(instrumentId, MakeTweet(instrumentData, tweetTemplate.HtmlTemplate), fileName,
                         Path.GetExtension(tweetTemplate.TweetLink).ToLower(), string.IsNullOrEmpty(instrumentData.Ticker) ? instrumentData.Ticker : "test");
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
-                    await ts.SendTweet(instrumentId, text);
+                    //await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
                 else
                 {
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText);
-                    await ts.SendTweet(instrumentId, text);
+                    //await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now}");
                 }
             }
@@ -322,13 +322,13 @@ namespace MarketPulse.Services
                     cImage.CreateInteractiveImageWithGraph(Convert.ToInt32(instrumentId), htmlTemplate, fileName,
                         Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
                     var text = MakeTweet(weekData, $"{tweetTemplate.MessageText} {(tweetTemplate.TweetLink != null ? tweetTemplate.TweetLink.Replace("{ticker}", instrumentData.Ticker ?? "test").Trim() : " ")}");
-                    await ts.SendTweet(instrumentId, text);
+                    // await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
                 else
                 {
                     var text = MakeTweet(weekData, tweetTemplate.MessageText);
-                    await ts.SendTweet(instrumentId, text);
+                    // await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now}");
                 }
             }
@@ -359,7 +359,7 @@ namespace MarketPulse.Services
                 if (!IsPublicHoliday(instrumentId, date))
                 {
                     var text = MakeTweet(earning, tweetTemplate.MessageText);
-                    await ts.SendTweet(instrumentId, text);
+                    //await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now}");
                 }
             }
