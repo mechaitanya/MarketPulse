@@ -101,6 +101,14 @@ namespace MarketPulse.Services
                     _logger.LogError($"{Username} is not authorized at {DateTime.UtcNow} UTC");
                     _emailSender.SendAuthorizationFailedEmail(Username);
                 }
+                if (response?.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    _logger.LogError($"Tweet not sent for {Username} and status code is {response?.StatusCode} or trying to send a duplicate tweet");
+                }
+                if (response?.StatusCode != HttpStatusCode.OK)
+                {
+                    _logger.LogError($"Tweet not sent for {Username} and status code is {response?.StatusCode}");
+                }
             }
             catch (Exception ex)
             {

@@ -272,7 +272,7 @@ namespace MarketPulse.Services
                 {
                     CreateImage cImage = new(_configuration, _logger);
                     cImage.CreateInteractiveImageWithGraph(instrumentId, MakeTweet(instrumentData, tweetTemplate.HtmlTemplate), fileName,
-                        Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
+                        Path.GetExtension(tweetTemplate.TweetLink).ToLower(), string.IsNullOrEmpty(instrumentData.Ticker) ? instrumentData.Ticker : "test");
                     var text = MakeTweet(instrumentData, tweetTemplate.MessageText + " " + tweetTemplate.TweetLink ?? " ".Trim());
                     await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
@@ -375,7 +375,7 @@ namespace MarketPulse.Services
 
                 Dictionary<string, string> keyValuePairs = new();
 
-                foreach (Match match in matches.Cast<Match>())
+                foreach (Match match in matches)
                 {
                     string placeholder = match.Groups[0].Value;
                     string key = match.Groups[1].Value;
