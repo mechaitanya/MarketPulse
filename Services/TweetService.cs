@@ -46,10 +46,9 @@ namespace MarketPulse.Services
             using (var scope = _serviceProvider.CreateScope())
             {
                 var dbContext = _dbContextFactory.CreateDbContext();
-
+                AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
                 var currentTime = DateTime.UtcNow.TimeOfDay;
                 var currentDayOfWeek = DateTime.UtcNow.DayOfWeek.ToString();
-                AccessTimeZoneData DayLight = new(_configuration, _logger);
 
                 var tweets = dbContext.TweetSchedule
                     .AsNoTracking()
@@ -63,15 +62,26 @@ namespace MarketPulse.Services
                         dbContext.InstrumentTweets,
                         schedule => new { schedule.InstrumentId, schedule.TemplateId },
                         tweet => new { tweet.InstrumentId, tweet.TemplateId },
-                        (schedule, tweet) => new { schedule.InstrumentId, tweet.TweetType, schedule.TweetTime, tweet.ScheduleId, schedule.TemplateId });
+                        (schedule, tweet) => new { schedule.InstrumentId, tweet.TweetType, schedule.TweetTime, tweet.ScheduleId, schedule.TemplateId })
+                    .ToList()
+                    .Select(tweet => {
+                        var date = accessTimeZoneData.GetDayLightSavingTime(tweet.InstrumentId, DateTime.UtcNow.Add(tweet.TweetTime));
+                        return new
+                        {
+                            tweet.InstrumentId,
+                            tweet.TweetType,
+                            TweetTime = date, 
+                            tweet.ScheduleId,
+                            tweet.TemplateId
+                        };
+                    }).ToList();
 
                 var tweetExecutionTasks = new List<Task>();
 
                 foreach (var tweet in tweets)
                 {
                     Task tweetExecutionTask;
-
-                    DateTime localDateTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow.Add(tweet.TweetTime), TimeZoneInfo.Local);
+                    DateTime localDateTime = TimeZoneInfo.ConvertTimeFromUtc(tweet.TweetTime, TimeZoneInfo.Local);
 
                     tweetExecutionTask = ExecuteTweetAsync(tweet.InstrumentId, tweet.TweetType, localDateTime);
                     tweetExecutionTasks.Add(tweetExecutionTask);
@@ -208,8 +218,6 @@ namespace MarketPulse.Services
             };
 
             TweetSender ts = new(_configuration, _dbContextFactory, _serviceProvider, _emailSender, _logger);
-            AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
-            var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
             var instrumentData = await tweetBuilder.GetMOATweetMessage();
@@ -220,7 +228,7 @@ namespace MarketPulse.Services
                 tweetTemplate.TweetLink = tweetTemplate.TweetLink.Replace("{filename}", fileName);
             }
 
-            if (!IsPublicHoliday(instrumentId, date))
+            if (!IsPublicHoliday(instrumentId, dTime))
             {
                 if (tweetTemplate.TweetLink != null && tweetTemplate.HtmlTemplate != null)
                 {
@@ -254,19 +262,17 @@ namespace MarketPulse.Services
             };
 
             TweetSender ts = new(_configuration, _dbContextFactory, _serviceProvider, _emailSender, _logger);
-            AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
-            var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
             var instrumentData = await tweetBuilder.GetEODTweetMessage();
 
-            var fileName = tweetType + "-" + DateTime.Now.ToString("yyMMdd");
+            var fileName = tweetType + "-" + DateTime.UtcNow.ToString("yyMMdd");
             if (tweetTemplate.TweetLink != null && tweetTemplate.TweetLink.Contains("filename"))
             {
                 tweetTemplate.TweetLink = tweetTemplate.TweetLink.Replace("{filename}", fileName);
             }
 
-            if (!IsPublicHoliday(instrumentId, date))
+            if (!IsPublicHoliday(instrumentId, dTime))
             {
                 if (tweetTemplate.TweetLink != null && tweetTemplate.HtmlTemplate != null)
                 {
@@ -299,20 +305,18 @@ namespace MarketPulse.Services
             };
 
             TweetSender ts = new(_configuration, _dbContextFactory, _serviceProvider, _emailSender, _logger);
-            var accessTimeZoneData = new AccessTimeZoneData(_configuration, _logger);
-            var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
             var tweetBuilder = new TweetBuilder(_tweetProperties, _logger, _configuration);
             var instrumentData = await tweetBuilder.GetEODTweetMessage();
             var weekData = await tweetBuilder.GetEOWTweetMessage();
 
-            var fileName = tweetType + "-" + DateTime.Now.ToString("yyMMdd");
+            var fileName = tweetType + "-" + DateTime.UtcNow.ToString("yyMMdd");
             if (tweetTemplate.TweetLink != null && tweetTemplate.TweetLink.Contains("filename"))
             {
                 tweetTemplate.TweetLink = tweetTemplate.TweetLink.Replace("{filename}", fileName);
             }
 
-            if (!IsPublicHoliday(instrumentId, date))
+            if (!IsPublicHoliday(instrumentId, dTime))
             {
                 if (tweetTemplate.TweetLink != null && tweetTemplate.HtmlTemplate != null)
                 {
@@ -348,15 +352,13 @@ namespace MarketPulse.Services
             };
 
             TweetSender ts = new(_configuration, _dbContextFactory, _serviceProvider, _emailSender, _logger);
-            AccessTimeZoneData accessTimeZoneData = new(_configuration, _logger);
-            var date = accessTimeZoneData.GetDayLightSavingTime(instrumentId, dTime);
 
             TweetBuilder tweetBuilder = new(_tweetProperties, _logger, _configuration);
             var earningData = await tweetBuilder.GetEATweetMessage();
 
             foreach (var earning in earningData)
             {
-                if (!IsPublicHoliday(instrumentId, date))
+                if (!IsPublicHoliday(instrumentId, dTime))
                 {
                     var text = MakeTweet(earning, tweetTemplate.MessageText);
                     //await ts.SendTweet(instrumentId, text);
