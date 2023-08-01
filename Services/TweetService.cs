@@ -326,13 +326,13 @@ namespace MarketPulse.Services
                     cImage.CreateInteractiveImageWithGraph(Convert.ToInt32(instrumentId), htmlTemplate, fileName,
                         Path.GetExtension(tweetTemplate.TweetLink).ToLower(), instrumentData.Ticker ?? "test");
                     var text = MakeTweet(weekData, $"{tweetTemplate.MessageText} {(tweetTemplate.TweetLink != null ? tweetTemplate.TweetLink.Replace("{ticker}", instrumentData.Ticker ?? "test").Trim() : " ")}");
-                    // await ts.SendTweet(instrumentId, text);
+                    //await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {instrumentId}");
                 }
                 else
                 {
                     var text = MakeTweet(weekData, tweetTemplate.MessageText);
-                    // await ts.SendTweet(instrumentId, text);
+                    //await ts.SendTweet(instrumentId, text);
                     Console.WriteLine($"{text} at {DateTime.Now}");
                 }
             }

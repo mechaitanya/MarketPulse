@@ -63,6 +63,7 @@ namespace MarketPulse.Utility
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"{ex.Message} @ {DateTime.UtcNow}  UTC in Generate plot");
                 _myLogger.LogError($"Error: {ex.Message} at {DateTime.UtcNow} UTC in Generate plot");
             }
 
@@ -95,6 +96,7 @@ namespace MarketPulse.Utility
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"{ex.Message} @ {DateTime.UtcNow}  UTC in CreateInteractiveImageWithGraph");
                 _myLogger.LogError($"Error: {ex.Message} at {DateTime.UtcNow} UTC in CreateInteractiveImageWithGraph");
             }
         }
@@ -121,6 +123,7 @@ namespace MarketPulse.Utility
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"{ex.Message} @ {DateTime.UtcNow}  UTC in CreateInteractiveImage");
                 _myLogger.LogError($"Error: {ex.Message} at {DateTime.UtcNow} UTC in CreateInteractiveImage");
             }
         }

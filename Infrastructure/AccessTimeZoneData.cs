@@ -1,5 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Data;
+using TimeZoneConverter;
 
 namespace MarketPulse.Infrastructure
 {
@@ -45,11 +47,17 @@ namespace MarketPulse.Infrastructure
         {
             try
             {
-                TimeZoneInfo zone = TimeZoneInfo.Local;
-                string standardName = zone.StandardName;
-                bool isDayLight = TimeZoneInfo.FindSystemTimeZoneById(standardName).IsDaylightSavingTime(tweetTime);
-                string instrumentTimezone = GetTimezone(instrumentId) ?? standardName;
-                bool isDayLightOfInstrument = TimeZoneInfo.FindSystemTimeZoneById(instrumentTimezone).IsDaylightSavingTime(tweetTime);
+                TimeZoneInfo localZone = TimeZoneInfo.Local;
+                bool isDayLight = localZone.IsDaylightSavingTime(tweetTime);
+                string instrumentTimezone = GetTimezone(instrumentId);
+                if (string.IsNullOrEmpty(instrumentTimezone))
+                {
+                    instrumentTimezone = localZone.Id; 
+                }
+
+                TimeZoneInfo instrumentZone = TZConvert.GetTimeZoneInfo(instrumentTimezone);
+                bool isDayLightOfInstrument = instrumentZone.IsDaylightSavingTime(tweetTime);
+
                 double value = 0;
 
                 if (isDayLight && !isDayLightOfInstrument)
@@ -65,9 +73,11 @@ namespace MarketPulse.Infrastructure
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"{ex.Message} @ {DateTime.UtcNow} UTC in GetDayLightSavingTime");
                 _logger.LogError($"ERROR: {ex.Message} at {DateTime.UtcNow:HH:mm:ss}, InstrumentId: {instrumentId} in GetDayLightSavingTime");
             }
             return tweetTime;
         }
+
     }
 }
