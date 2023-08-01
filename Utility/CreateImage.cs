@@ -21,6 +21,11 @@ namespace MarketPulse.Utility
 
         public string GeneratePlot(int instrumentID, string strFileName, string ticker)
         {
+            if (!Directory.Exists(Path.Combine(_serverFilePath, ticker)))
+            {
+                Directory.CreateDirectory(Path.Combine(_serverFilePath, ticker));
+            }
+
             string graphImage = Path.Combine(_serverFilePath, ticker, strFileName + ".png");
 
             try
