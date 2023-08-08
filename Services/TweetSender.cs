@@ -95,7 +95,10 @@ namespace MarketPulse.Services
                 }
 
                 var response = await AuthenticateUserAndSendTweet(creds, message, _logger, Username);
-
+                if (response?.StatusCode == HttpStatusCode.OK)
+                {
+                    _logger.LogError($"Tweet sent for {Username} and status code is {response?.StatusCode}");
+                }
                 if (response?.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     _logger.LogError($"{Username} is not authorized at {DateTime.UtcNow} UTC");

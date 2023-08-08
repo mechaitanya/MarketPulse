@@ -30,5 +30,18 @@ namespace MarketPulse.RepositoryModels
                 return new List<PressRelease>();
             }
         }
+
+        public void UpdatePressReleases(long PRID)
+        {
+            try
+            {
+                AccessPressReleaseData accessPressRelease = new(_configuration, _logger);
+                accessPressRelease.UpdateTweetedPressReleases(PRID);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error {ex.Message} in UpdatePressReleases for Press release ID: {PRID}");
+            }
+        }
     }
 }

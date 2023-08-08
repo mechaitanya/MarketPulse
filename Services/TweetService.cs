@@ -64,13 +64,14 @@ namespace MarketPulse.Services
                         tweet => new { tweet.InstrumentId, tweet.TemplateId },
                         (schedule, tweet) => new { schedule.InstrumentId, tweet.TweetType, schedule.TweetTime, tweet.ScheduleId, schedule.TemplateId })
                     .ToList()
-                    .Select(tweet => {
+                    .Select(tweet =>
+                    {
                         var date = accessTimeZoneData.GetDayLightSavingTime(tweet.InstrumentId, DateTime.UtcNow.Add(tweet.TweetTime));
                         return new
                         {
                             tweet.InstrumentId,
                             tweet.TweetType,
-                            TweetTime = date, 
+                            TweetTime = date,
                             tweet.ScheduleId,
                             tweet.TemplateId
                         };
@@ -199,6 +200,7 @@ namespace MarketPulse.Services
                     {
                         var text = MakeTweet(PRtweet, tweetTemplate.MessageText);
                         //await ts.SendTweet(instrumentId, text);
+                        await tweetBuilder.UpdateSentPressReleases(PRtweet.PR_ID);
                         Console.WriteLine($"{text} at {DateTime.Now} and Instrument ID: {PRtweet.PR_Instrument_ID}");
                     }
                 }

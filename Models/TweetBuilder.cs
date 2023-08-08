@@ -34,6 +34,11 @@ namespace MarketPulse.Models
             }
         }
 
+        public async Task UpdateSentPressReleases(long prID)
+        {
+            _pressReleasesRepository.UpdatePressReleases(prID);
+        }
+
         public async Task<InstrumentData> GetMOATweetMessage()
         {
             if (_properties.TweetType.ToLower() == "moa")
